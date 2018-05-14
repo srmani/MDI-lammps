@@ -806,7 +806,7 @@ void Driver::md_init(Error* error)
   update->beginstep = update->firststep;
   update->endstep = update->laststep;
   lmp->init();
-  update->integrate->setup();
+  update->integrate->setup(1);
 }
 
 
