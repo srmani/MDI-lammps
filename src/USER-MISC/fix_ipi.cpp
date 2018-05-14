@@ -85,6 +85,7 @@ static void open_socket(int &sockfd, int inet, int port, char* host,
 #else
   if (inet>0) {  // creates an internet socket
 
+    /*
     // fetches information on the host
     struct addrinfo hints, *res;
     char service[256];
@@ -108,6 +109,91 @@ static void open_socket(int &sockfd, int inet, int port, char* host,
     if (connect(sockfd, res->ai_addr, res->ai_addrlen) < 0)
       error->one(FLERR,"Error opening INET socket: wrong port or server unreachable");
     freeaddrinfo(res);
+    */
+
+  int ret;
+  struct sockaddr_in driver_address;
+  int i;
+  //char *serv_host = "localhost";
+  //string readline;
+  int port;
+  struct hostent *host_ptr;
+  //ifstream hostfile("../hostname");
+  FILE *hostfile;
+  char buff[255];
+
+  port = 8021;
+
+  printf("In C code TESTING\n");
+
+
+
+  hostfile = fopen("../hostname","r");
+  fgets(buff, 255, (FILE*)hostfile);
+
+  printf("Driver hostname: %s\n",buff);
+
+  int hlen = 10;
+  /*
+  for (i=0; i < hlen; i++) {
+    serv_host[i] = buff[i];
+  }
+  */
+  hlen = strlen(buff);
+  printf("hostname length: %i\n",hlen);
+
+  char serv_host[hlen];
+  for (i=0; i < hlen; i++) {
+    serv_host[i] = buff[i];
+  }
+  serv_host[hlen-1] = '\0';
+
+  /*
+  if (hostfile.is_open()) {
+    //read the first line
+    getline(hostfile,readline);
+  }
+  printf("%%% HOSTNAME: %s\n",readline);
+  int hlen = readline.length();
+  char serv_host[hlen+1];
+  strcpy(serv_host, readline.c_str());
+  */
+  printf("Driver hostname: %s\n",serv_host);
+  printf("Driver hostname: %s\n",serv_host);
+
+
+
+
+
+  //get the address of the host
+  host_ptr = gethostbyname(serv_host);
+  if (host_ptr == NULL) {
+    error->one(FLERR,"Error in gethostbyname");
+  }
+  if (host_ptr->h_addrtype != AF_INET) {
+    error->one(FLERR,"Unkown address type");
+  }
+
+  bzero((char *) &driver_address, sizeof(driver_address));
+  driver_address.sin_family = AF_INET;
+  driver_address.sin_addr.s_addr = 
+    ((struct in_addr *)host_ptr->h_addr_list[0])->s_addr;
+  driver_address.sin_port = htons(port);
+
+  //create the socket
+  sockfd = socket(AF_INET, SOCK_STREAM, 0);
+  if (sockfd < 0) {
+    error->one(FLERR,"Could not create socket");
+  }
+  printf("Here is the socket: %i\n",sockfd);
+
+  //connect to the driver
+  ret = connect(sockfd, (const struct sockaddr *) &driver_address, sizeof(struct sockaddr_un));
+  if (ret < 0) {
+    error->one(FLERR,"Could not connect to the driver");
+  }
+
+
 
   } else {  // creates a unix socket
     struct sockaddr_un serv_addr;
@@ -174,6 +260,10 @@ static void readbuffer(int sockfd, char *data, int len, Error* error)
 FixIPI::FixIPI(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg), irregular(NULL)
 {
+  //<<<
+  printf("In FixIPI constructor\n");
+  fprintf(screen,"In FixIPI constructor ...\n");
+  //>>>
   /* format for fix:
    *  fix  num  group_id ipi host port [unix]
    */
@@ -222,6 +312,9 @@ FixIPI::FixIPI(LAMMPS *lmp, int narg, char **arg) :
 
   // yet, we have not assigned a socket
   socketflag = 0;
+  //<<<
+  printf("End of FixIPI constructor\n");
+  //>>>
 }
 
 /* ---------------------------------------------------------------------- */
@@ -250,6 +343,9 @@ int FixIPI::setmask()
 
 void FixIPI::init()
 {
+  //<<<
+  printf("In FixIPI init\n");
+  //>>>
   //only opens socket on master process
   if (master) {
         if (!socketflag) open_socket(ipisock, inet, port, host, error);
@@ -267,6 +363,9 @@ void FixIPI::init()
   // makes sure that neighbor lists are re-built at each step (cannot make assumptions when cycling over beads!)
   neighbor->delay = 0;
   neighbor->every = 1;
+  //<<<
+  printf("End of FixIPI init\n");
+  //>>>
 }
 
 void FixIPI::initial_integrate(int vflag)

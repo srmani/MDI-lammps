@@ -28,6 +28,11 @@
 #include "memory.h"
 
 #include "libqmmm.h"
+//<<<
+//#include "../../lib/qmmm/messages.h"
+#include "messages.h"
+#include "sockets.h"
+//>>>
 
 // message tags for QM/MM inter communicator communication
 // have to match with those from the QM code
@@ -439,8 +444,17 @@ void FixQMMM::exchange_positions()
       isend_buf[1] = num_qm;
       isend_buf[2] = num_mm;
       isend_buf[3] = ntypes;
-      MPI_Send(isend_buf, 4, MPI_INT,    1, QMMM_TAG_SIZE, qm_comm);
-      MPI_Send(celldata,  9, MPI_DOUBLE, 1, QMMM_TAG_CELL, qm_comm);
+      //<<<
+      //MPI_Send(isend_buf, 4, MPI_INT,    1, QMMM_TAG_SIZE, qm_comm);
+      //MPI_Send(celldata,  9, MPI_DOUBLE, 1, QMMM_TAG_CELL, qm_comm);
+      if (screen) fputs("CALLING SEND_CELL\n",screen);
+      if (logfile) fputs("CALLING SEND_CELL\n",logfile);
+      //qmmmcfg.client.send_cell();
+      send_label(qmmm_interface.socket_to_driver, "CELL");
+      send_array(qmmm_interface.socket_to_driver, celldata, sizeof(celldata));
+      if (screen) fputs("CALLED SEND_CELL\n",screen);
+      if (logfile) fputs("CALLED SEND_CELL\n",logfile);
+      //>>>
     }
     if (verbose > 0) {
       if (screen) fputs("QMMM: exchange positions\n",screen);
@@ -485,6 +499,8 @@ void FixQMMM::exchange_positions()
 
       /* done collecting coordinates, send it to dependent codes */
       /* to QM code */
+      //<<<
+      /*
       MPI_Send(qm_coord, 3*num_qm, MPI_DOUBLE, 1, QMMM_TAG_COORD, qm_comm);
       MPI_Send(qm_charge, num_qm, MPI_DOUBLE, 1, QMMM_TAG_CHARGE, qm_comm);
       MPI_Send(mm_charge_all, natoms, MPI_DOUBLE, 1, QMMM_TAG_COORD, qm_comm);
@@ -492,9 +508,14 @@ void FixQMMM::exchange_positions()
       MPI_Send(mm_mask_all, natoms, MPI_INT, 1, QMMM_TAG_COORD, qm_comm);
       MPI_Send(type, natoms, MPI_INT, 1, QMMM_TAG_TYPE, qm_comm);
       MPI_Send(mass, ntypes+1, MPI_DOUBLE, 1, QMMM_TAG_MASS, qm_comm);
+      */
+      send_coordinates(qm_coord, qm_charge, mm_charge_all, mm_coord_all, mm_mask_all, type, mass);
+      //>>>
 
       /* to MM slave code */
-      MPI_Send(qm_coord, 3*num_qm, MPI_DOUBLE, 1, QMMM_TAG_COORD, mm_comm);
+      //<<<
+      //MPI_Send(qm_coord, 3*num_qm, MPI_DOUBLE, 1, QMMM_TAG_COORD, mm_comm);
+      //>>>
 
       free(mm_coord_all);
       free(mm_charge_all);
@@ -505,7 +526,19 @@ void FixQMMM::exchange_positions()
     }
   } else if (qmmm_role == QMMM_ROLE_SLAVE) {
 
-    MPI_Recv(qm_coord, 3*num_qm, MPI_DOUBLE, 0, QMMM_TAG_COORD, mm_comm, MPI_STATUS_IGNORE);
+    //<<<
+    //@@@
+    //MPI_Recv(qm_coord, 3*num_qm, MPI_DOUBLE, 0, QMMM_TAG_COORD, mm_comm, MPI_STATUS_IGNORE);
+    /* receive the new QM coordinates from the server */
+    printf("Receiving QM coordinates\n");
+    printf("Using socket: %i\n",qmmm_interface.socket_to_driver);
+    printf("Bytes: %i\n",(3*num_qm)*sizeof(double));
+    receive_qm_coordinates(qm_coord, num_qm);
+    //receive_array(qmmmcfg.client.socket_to_driver, qm_coord, (3*num_qm)*sizeof(double));
+    printf("Finished receiving QM coordinates\n");
+    //send_label(qmmmcfg.client.socket_to_driver, "RESP");
+    //>>>
+
     // not needed for as long as we allow only one MPI task as slave
     MPI_Bcast(qm_coord, 3*num_qm, MPI_DOUBLE,0,world);
 
@@ -548,19 +581,41 @@ void FixQMMM::exchange_forces()
     double *mm_force_on_qm_atoms = qm_coord; // use qm_coord as a buffer
 
     if (comm->me == 0) {
+      //<<<
+      /*
       // receive QM forces from QE
       MPI_Recv(qm_force,3*num_qm,MPI_DOUBLE,1,QMMM_TAG_FORCE,qm_comm,MPI_STATUS_IGNORE);
       // receive ec contribution to MM forces from QE
       MPI_Recv(mm_force_all,3*natoms,MPI_DOUBLE,1,QMMM_TAG_FORCE2,qm_comm,MPI_STATUS_IGNORE);
       // receive MM forces from LAMMPS
       MPI_Recv( mm_force_on_qm_atoms, 3*num_qm,MPI_DOUBLE,1,QMMM_TAG_FORCE,mm_comm,MPI_STATUS_IGNORE);
+      */
+
+      double potconv, posconv, forceconv;
+      potconv=3.1668152e-06/force->boltz;
+      posconv=0.52917721*force->angstrom;
+      forceconv=potconv*posconv;
+
+      receive_forces(qm_force, mm_force_all, mm_force_on_qm_atoms, forceconv);
+      //>>>
+
+      //<<<
+      if (screen)  fputs("QMMM: @@@\n",screen);
+      if (logfile) fputs("QMMM: @@@@\n",logfile);
+      //memset( qm_force, 0.0, sizeof(qm_force) );
+      //memset( mm_force_all, 0.0, sizeof(mm_force_all) );
+      //memset( mm_force_on_qm_atoms, 0.0, sizeof(mm_force_on_qm_atoms) );
+      //>>>
 
       // subtract MM forces from QM forces to get the delta
       // NOTE: QM forces are always sent in "real" units,
       // so we need to apply the scaling factor to get to the
       // supported internal units ("metal" or "real")
       for (int i=0; i < num_qm; ++i) {
-        if  (verbose > 1) {
+        //<<<
+        //if  (verbose > 1) {
+        if  (true) {
+        //>>>
            const char fmt[] = "[" TAGINT_FORMAT "]: QM(%g %g %g) MM(%g %g %g) /\\(%g %g %g)\n";
            if (screen) fprintf(screen, fmt, qm_remap[i],
                 qmmm_fscale*qm_force[3*i+0], qmmm_fscale*qm_force[3*i+1], qmmm_fscale*qm_force[3*i+2],
@@ -642,7 +697,14 @@ void FixQMMM::exchange_forces()
     // the reduction is not really needed with only one rank (for now)
     MPI_Reduce(mm_force_on_qm_atoms, reduced_mm_force_on_qm_atoms, 3*num_qm, MPI_DOUBLE, MPI_SUM, 0, world);
     // use qm_coord array as a communication buffer
-    MPI_Send(reduced_mm_force_on_qm_atoms, 3*num_qm, MPI_DOUBLE, 0, QMMM_TAG_FORCE, mm_comm);
+    //<<<
+    //MPI_Send(reduced_mm_force_on_qm_atoms, 3*num_qm, MPI_DOUBLE, 0, QMMM_TAG_FORCE, mm_comm);
+    send_mm_force_on_qm_atoms(reduced_mm_force_on_qm_atoms, num_qm);
+    //>>>
+  }
+  if ((comm->me) == 0 && (verbose > 0)) {
+    if (screen)  fputs("QMMM: finished exchanging forces\n",screen);
+    if (logfile) fputs("QMMM: finished exchanging forces\n",logfile);
   }
   return;
 }
@@ -662,6 +724,8 @@ void FixQMMM::init()
       MPI_Request req[2];
       int nat[2];
 
+      //<<<
+      /*
       if (me == 0) {
         // receive number of QM atoms from QE
         MPI_Irecv(nat, 1, MPI_INT, 1, QMMM_TAG_SIZE, qm_comm, req);
@@ -669,15 +733,31 @@ void FixQMMM::init()
         MPI_Irecv(nat+1, 1, MPI_INT, 1, QMMM_TAG_SIZE, mm_comm, req+1);
         MPI_Waitall(2,req,MPI_STATUS_IGNORE);
       }
+      */
+      //>>>
+      //<<<
+      /*
       // broadcast across MM master processes
       MPI_Bcast(nat, 2, MPI_INT, 0, world);
+      */
+      //>>>
 
       num_qm = group->count(igroup);
       num_mm = group->count(mm_group);
 
+      //<<<
+      //&&&&&&
+      printf("-----------------------------------------\n");
+      printf("Calling intialize_client\n");
+      //QMMM_CLIENT::QMMMClient client;
+      //qmmmcfg.client.initialize_client();
+      send_natoms( (int) atom->natoms, num_qm, num_mm, atom->ntypes);
+      /*
       // consistency check. the fix group and the QM and MM slave
       if ((num_qm != nat[0]) || (num_qm != nat[1]))
         error->all(FLERR,"Inconsistent number of QM/MM atoms");
+      */
+      //>>>
 
       memory->create(qm_coord,3*num_qm,"qmmm:qm_coord");
       memory->create(qm_charge,num_qm,"qmmm:qm_charge");
@@ -703,10 +783,12 @@ void FixQMMM::init()
 
       num_qm = group->count(igroup);
 
-      if (me == 0) {
+      //<<<
+      //if (me == 0) {
         /* send number of QM atoms to MM-master for confirmation */
-        MPI_Send(&num_qm, 1, MPI_INT, 0, QMMM_TAG_SIZE, mm_comm);
-      }
+      //  MPI_Send(&num_qm, 1, MPI_INT, 0, QMMM_TAG_SIZE, mm_comm);
+      //}
+      //>>>
       memory->create(qm_coord,3*num_qm,"qmmm:qm_coord");
       memory->create(qm_force,3*num_qm,"qmmm:qm_force");
 

@@ -10,6 +10,10 @@
 #ifndef QE_LIBQMMM_H
 #define QE_LIBQMMM_H
 
+//<<<
+//#include "../../src/USER-QMMM/messages.h"
+//>>>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -48,6 +52,9 @@ typedef struct {
   char *restart;                /* name of (MM) restart file */
   char *handle;                 /* handle for SHEMEM communication */
   int my_comm, qm_comm, mm_comm; /* MPI communicators, Fortran-style */
+  //<<<
+  //QMMM_CLIENT::QMMMClient client;
+  //>>>
 } qmmm_config_t;
 
 /* declare a global variable for the QM/MM setup.
