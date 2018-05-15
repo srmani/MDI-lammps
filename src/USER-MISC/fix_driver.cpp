@@ -77,33 +77,16 @@ int FixDriver::setmask()
 
 void FixDriver::exchange_forces()
 {
-  if (screen) fprintf(screen,"In exchange forces\n");
-  if (logfile) fprintf(logfile,"In exchange forces\n");
-
   double **f = atom->f;
   const int * const mask  = atom->mask;
   const int nlocal = atom->nlocal;
 
-  if (screen) fprintf(screen,"Forces before exchange\n");
-  if (logfile) fprintf(logfile,"Forces before exchange\n");
-  for (int i=0; i < nlocal; ++i) {
-    if (mask[i] & groupbit) {
-      if (screen) fprintf(screen,"f: %i %f %f %f\n",i+1,f[i][0],f[i][1],f[i][2]);
-      if (logfile) fprintf(logfile,"f: %i %f %f %f\n",i+1,f[i][0],f[i][1],f[i][2]);
-    }
-  }
-
   // add the forces from the driver
-  if (screen) fprintf(screen,"Total forces\n");
-  if (logfile) fprintf(logfile,"Total forces\n");
   for (int i=0; i < nlocal; ++i) {
     if (mask[i] & groupbit) {
       f[i][0] += add_force[3*(atom->tag[i]-1)+0];
       f[i][1] += add_force[3*(atom->tag[i]-1)+1];
       f[i][2] += add_force[3*(atom->tag[i]-1)+2];
-
-      if (screen) fprintf(screen,"f: %i %f %f %f\n",i+1,f[i][0],f[i][1],f[i][2]);
-      if (logfile) fprintf(logfile,"f: %i %f %f %f\n",i+1,f[i][0],f[i][1],f[i][2]);
     }
   }
 

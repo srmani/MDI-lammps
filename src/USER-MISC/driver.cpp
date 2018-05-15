@@ -43,6 +43,7 @@ using namespace LAMMPS_NS;
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <sys/un.h>
 #include <netdb.h>
 #endif
@@ -145,6 +146,7 @@ static void open_socket(int &sockfd, int inet, int port, char* host,
   //ifstream hostfile("../hostname");
   FILE *hostfile;
   char buff[255];
+  int delay_value = 1;
 
   port = 8021;
 
@@ -210,6 +212,13 @@ static void open_socket(int &sockfd, int inet, int port, char* host,
     error->one(FLERR,"Could not create socket");
   }
   printf("Here is the socket: %i\n",sockfd);
+
+  //<<<
+  ret = setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &delay_value, sizeof(int));
+  if (ret < 0) {
+    error->one(FLERR,"Could not turn off TCP delay");
+  }
+  //>>>
 
   //connect to the driver
   ret = connect(sockfd, (const struct sockaddr *) &driver_address, sizeof(struct sockaddr_un));
@@ -338,10 +347,12 @@ void Driver::command(int narg, char **arg)
     // broadcast the command to the other tasks
     MPI_Bcast(header,12,MPI_CHAR,0,world);
     
+    /*
     if (screen)
       fprintf(screen,"Read label from driver: %s\n",header);
     if (logfile)
       fprintf(logfile,"Read label from driver: %s\n",header);
+    */
 
     if (strcmp(header,"STATUS      ") == 0 ) {
       if (master) {
@@ -635,11 +646,6 @@ void Driver::write_forces(Error* error)
   for (int i = 0; i < nlocal; i++) {
     //if (mask[i] & groupbit) {
 
-    if (screen)
-      fprintf(screen,"f: %i %f %f %f\n",i+1,f[i][0],f[i][1],f[i][2]);
-    if (logfile)
-      fprintf(logfile,"f: %i %f %f %f\n",i+1,f[i][0],f[i][1],f[i][2]);
-
       forces[3*(atom->tag[i]-1)+0] = f[i][0]*forceconv;
       forces[3*(atom->tag[i]-1)+1] = f[i][1]*forceconv;
       forces[3*(atom->tag[i]-1)+2] = f[i][2]*forceconv;
@@ -705,10 +711,7 @@ void Driver::receive_forces(Error* error)
   double **f = atom->f;
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
-  if (screen)
-    fprintf(screen,"Received forces: %f\n",forceconv);
-  if (logfile)
-    fprintf(logfile,"Received forces: %f\n",forceconv);
+
   //if (igroup == atom->firstgroup) nlocal = atom->nfirst;
   for (int i = 0; i < nlocal; i++) {
     //if (mask[i] & groupbit) {
@@ -716,11 +719,6 @@ void Driver::receive_forces(Error* error)
     f[i][0] = forces[3*(atom->tag[i]-1)+0]/forceconv;
     f[i][1] = forces[3*(atom->tag[i]-1)+1]/forceconv;
     f[i][2] = forces[3*(atom->tag[i]-1)+2]/forceconv;
-
-    if (screen)
-      fprintf(screen,"f: %i %f %f %f\n",i+1,f[i][0],f[i][1],f[i][2]);
-    if (logfile)
-      fprintf(logfile,"f: %i %f %f %f\n",i+1,f[i][0],f[i][1],f[i][2]);
 
     //}
   }
