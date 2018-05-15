@@ -751,7 +751,6 @@ void Driver::add_forces(Error* error)
       FixDriver *fixd = static_cast<FixDriver*>(modify->fix[i]);
       for (int j = 0; j < 3*atom->natoms; j++) {
 	fixd->add_force[j] = forces[j];
-	if (screen) fprintf(screen,"&&&: %i %f\n",j,fixd->add_force[j]);
       }
     }
   }
