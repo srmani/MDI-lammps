@@ -36,6 +36,7 @@ class Driver : protected Pointers {
   void read_coordinates(Error *);
   void send_coordinates(Error *);
   void send_charges(Error *);
+  void send_energy(Error *);
   void write_forces(Error *);
   void add_forces(Error *);
   void receive_forces(Error *);
@@ -46,6 +47,7 @@ class Driver : protected Pointers {
   int driver_socket;
   
   int nat;
+  bool md_initialized; // has the MD simulation been initialized yet?
 
 private:
   class Irregular *irregular;

@@ -291,7 +291,9 @@ static void readbuffer(int sockfd, char *data, int len, Error* error)
 
 /* ---------------------------------------------------------------------- */
 
-Driver::Driver(LAMMPS *lmp) : Pointers(lmp) {}
+Driver::Driver(LAMMPS *lmp) : Pointers(lmp) {
+  md_initialized = false;
+}
 
 /* ---------------------------------------------------------------------- */
 
@@ -397,6 +399,9 @@ void Driver::command(int narg, char **arg)
     else if (strcmp(header,"<CHARGE     ") == 0 ) {
       // send the charges
       send_charges(error);
+    }
+    else if (strcmp(header,"<ENERGY     ") == 0 ) {
+      send_energy(error);
     }
     else if (strcmp(header,"<FORCES     ") == 0 ) {
       write_forces(error);
@@ -547,6 +552,38 @@ void Driver::send_charges(Error* error)
 
   if (master) { 
     writebuffer(driver_socket, (char*) charges_reduced, (atom->natoms)*sizeof(double), error);
+  }
+}
+
+
+void Driver::send_energy(Error* error)
+/* Writes to a socket.
+
+   Args:
+   sockfd: The id of the socket that will be written to.
+   data: The data to be written to the socket.
+   len: The length of the data in bytes.
+*/
+{
+
+  double pe;
+  double *potential_energy = &pe;
+
+  // be certain that the MD simulation has been initialized
+  if ( not md_initialized ) {
+    md_init(error);
+  }
+
+  // identify the driver fix
+  for (int i = 0; i < modify->nfix; i++) {
+    if (strcmp(modify->fix[i]->style,"driver") == 0) {
+      FixDriver *fixd = static_cast<FixDriver*>(modify->fix[i]);
+      pe = fixd->potential_energy;
+    }
+  }
+
+  if (master) { 
+    writebuffer(driver_socket, (char*) potential_energy, sizeof(double), error);
   }
 }
 
@@ -804,6 +841,8 @@ void Driver::md_init(Error* error)
   update->endstep = update->laststep;
   lmp->init();
   update->integrate->setup(1);
+
+  md_initialized = true;
 }
 
 

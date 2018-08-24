@@ -24,6 +24,8 @@
 #include "error.h"
 #include "group.h"
 #include "memory.h"
+#include "modify.h"
+#include "compute.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -39,7 +41,8 @@ using namespace FixConst;
  * fix ID group-ID qmmm [couple <group-ID>]
  ***************************************************************/
 FixDriver::FixDriver(LAMMPS *lmp, int narg, char **arg) :
-  Fix(lmp, narg, arg)
+  Fix(lmp, narg, arg),
+  id_pe(NULL), pe(NULL)
 {
 
   if (narg > 3)
@@ -54,6 +57,21 @@ FixDriver::FixDriver(LAMMPS *lmp, int narg, char **arg) :
   if (screen) fprintf(screen,"add_force atoms: %i\n",atom->natoms);
   if (logfile) fprintf(logfile,"add_force atoms: %i\n",atom->natoms);
 
+  // create a new compute pe style
+  // id = fix-ID + pe, compute group = all
+
+  int n = strlen(id) + 4;
+  id_pe = new char[n];
+  strcpy(id_pe,id);
+  strcat(id_pe,"_pe");
+
+  char **newarg = new char*[3];
+  newarg[0] = id_pe;
+  newarg[1] = (char *) "all";
+  newarg[2] = (char *) "pe";
+  modify->add_compute(3,newarg);
+  delete [] newarg;
+
 }
 
 /*********************************
@@ -61,7 +79,8 @@ FixDriver::FixDriver(LAMMPS *lmp, int narg, char **arg) :
  *********************************/
 FixDriver::~FixDriver()
 {
-
+  modify->delete_compute(id_pe);
+  delete [] id_pe;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -108,6 +127,11 @@ void FixDriver::init()
   if (logfile) fprintf(logfile,"add_force atoms: %i\n",atom->natoms);
   */
 
+  int icompute = modify->find_compute(id_pe);
+  if (icompute < 0)
+    error->all(FLERR,"Potential energy ID for fix neb does not exist");
+  pe = modify->compute[icompute];
+
   return;
 
 }
@@ -117,13 +141,27 @@ void FixDriver::init()
 void FixDriver::setup(int)
 {
   exchange_forces();
+
+  //compute the potential energy
+  potential_energy = pe->compute_scalar();
+  //printf("SSSSSS: %f\n",energy);
+
+  // trigger potential energy computation on next timestep
+  pe->addstep(update->ntimestep+1);
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixDriver::post_force(int vflag)
 {
+  // calculate the energy
+  potential_energy = pe->compute_scalar();
+  //printf("RRRRRR: %f\n",energy);
+
   exchange_forces();
+
+  // trigger potential energy computation on next timestep
+  pe->addstep(update->ntimestep+1);
 }
 
 

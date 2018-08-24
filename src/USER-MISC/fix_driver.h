@@ -37,9 +37,14 @@ class FixDriver : public Fix {
   void post_force(int);
 
   double *add_force; // stores forces added using +FORCE command
+  double potential_energy; // stores potential energy
 
  protected:
-  void exchange_forces();       // collected forces from QM and MM slave
+  void exchange_forces();
+
+ private:
+  char *id_pe;
+  class Compute *pe;
 
 };
 
