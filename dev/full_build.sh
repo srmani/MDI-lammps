@@ -25,7 +25,8 @@ make no-poems
 make no-python
 make no-voronoi
 make yes-user-qmmm
-make yes-user-misc
+#make yes-user-misc
+make yes-user-mdi
 
 cd ../lib/qmmm
 make -j 32 -f Makefile.ifort
