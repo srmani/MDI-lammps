@@ -24,12 +24,19 @@ make no-mscg
 make no-poems
 make no-python
 make no-voronoi
-make yes-user-qmmm
-#make yes-user-misc
+make no-user-qmmm
 make yes-user-mdi
 
-cd ../lib/qmmm
-make -j 32 -f Makefile.ifort
+#cd ../lib/qmmm
+#make -j 32 -f Makefile.ifort
+
+#build mdi
+cd ../lib/mdi
+mkdir build
+cd build
+cmake ..
+make
+cd ../
 
 cd ../reax
 make -j 32 -f Makefile.ifort
@@ -37,6 +44,6 @@ make -j 32 -f Makefile.ifort
 cd ../../src
 make -j 32 cori2
 
-cd ../lib/qmmm
-make -j 32 -f Makefile.espresso all
-make -j 32 -f Makefile.ifort all
+#cd ../lib/qmmm
+#make -j 32 -f Makefile.espresso all
+#make -j 32 -f Makefile.ifort all
