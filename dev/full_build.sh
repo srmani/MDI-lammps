@@ -37,6 +37,7 @@ cd build
 cmake ..
 make
 cd ../
+cp build/molssi_driver_interface/libmdi.a .
 
 cd ../reax
 make -j 32 -f Makefile.ifort
