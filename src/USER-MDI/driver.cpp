@@ -30,6 +30,7 @@
 #include "memory.h"
 #include "fix.h"
 #include "fix_driver.h"
+#include "mdi.h"
 
 #include "verlet.h"
 #include "neighbor.h"
@@ -68,8 +69,9 @@ neighbor->every = 1;
 */
 //>>>>>>
 
-const double bohr_to_angstrom = 0.52917720859;
-const double force_conv = 3.1668152e-06;
+//const double bohr_to_angstrom = 0.52917720859;
+const double bohr_to_angstrom = 1.0/MDI_ANGSTROM_TO_BOHR;
+//const double force_conv = 3.1668152e-06;
 
 /** hash table top level data structure */
 typedef struct taginthash_t {
@@ -582,6 +584,9 @@ void Driver::send_energy(Error* error)
     }
   }
 
+  // convert the energy to atomic units
+  pe *= MDI_KELVIN_TO_HARTREE/force->boltz;
+
   if (master) { 
     writebuffer(driver_socket, (char*) potential_energy, sizeof(double), error);
   }
@@ -632,7 +637,7 @@ void Driver::write_forces(Error* error)
 */
 {
   double potconv, posconv, forceconv;
-  potconv=force_conv/force->boltz;
+  potconv=MDI_KELVIN_TO_HARTREE/force->boltz;
   posconv=bohr_to_angstrom*force->angstrom;
   forceconv=potconv*posconv;
 
@@ -732,7 +737,7 @@ void Driver::receive_forces(Error* error)
 */
 {
   double potconv, posconv, forceconv;
-  potconv=force_conv/force->boltz;
+  potconv=MDI_KELVIN_TO_HARTREE/force->boltz;
   posconv=bohr_to_angstrom*force->angstrom;
   forceconv=potconv*posconv;
 
@@ -765,7 +770,7 @@ void Driver::receive_forces(Error* error)
 void Driver::add_forces(Error* error)
 {
   double potconv, posconv, forceconv;
-  potconv=force_conv/force->boltz;
+  potconv=MDI_KELVIN_TO_HARTREE/force->boltz;
   posconv=bohr_to_angstrom*force->angstrom;
   forceconv=potconv*posconv;
 

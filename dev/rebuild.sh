@@ -15,6 +15,7 @@ cmake ..
 make
 cd ../
 cp build/molssi_driver_interface/libmdi.a .
+cp molssi_driver_interface/mdi.h .
 
 cd ../../src
 make -j 32 cori2
