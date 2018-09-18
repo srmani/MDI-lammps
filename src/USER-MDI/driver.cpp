@@ -344,7 +344,9 @@ void Driver::command(int narg, char **arg)
   /* ----------------------------------------------------------------- */
   char header[MSGLEN+1];
 
-  while (true) {
+  bool exit_flag = false;
+
+  while (not exit_flag) {
 
     if (master) { 
       // read the next command from the driver
@@ -422,6 +424,9 @@ void Driver::command(int narg, char **arg)
     }
     else if (strcmp(header,"TIMESTEP    ") == 0 ) {
       timestep(error);
+    }
+    else if (strcmp(header,"EXIT        ") == 0 ) {
+      exit_flag = true;
     }
     else {
       error->all(FLERR,"Unknown command from driver");
