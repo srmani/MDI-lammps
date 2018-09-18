@@ -30,7 +30,9 @@
 #include "memory.h"
 #include "fix.h"
 #include "fix_driver.h"
+extern "C" {
 #include "mdi.h"
+}
 
 #include "verlet.h"
 #include "neighbor.h"
@@ -90,7 +92,7 @@ typedef struct taginthash_t {
 
 /* Utility functions to simplify the interface with POSIX sockets */
 
-static void open_socket(int &sockfd, int inet, int port, char* host,
+static void open_socket(int &sockfd, int inet, int port, const char* host,
                         Error *error)
 /* Opens a socket.
 
@@ -330,7 +332,8 @@ void Driver::command(int narg, char **arg)
 
   // open the socket
   if (master) {
-    open_socket(driver_socket, inet, port, host, error);
+    //open_socket(driver_socket, inet, port, host, error);
+    ierr = MDI_Open(&driver_socket, &inet, &port, host);
   } else driver_socket=0;
 
   // create instance of Irregular class
