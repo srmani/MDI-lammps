@@ -306,7 +306,7 @@ void Driver::command(int narg, char **arg)
   /* format for driver command:
    * driver hostname port [unix]
    */
-  if (narg < 2) error->all(FLERR,"Illegal driver command");
+  if (narg < 3) error->all(FLERR,"Illegal driver command");
 
   if (atom->tag_enable == 0)
     error->all(FLERR,"Cannot use driver command without atom IDs");
@@ -317,7 +317,8 @@ void Driver::command(int narg, char **arg)
   // obtain host information from the command arguments
   host = strdup(arg[0]);
   port = force->inumeric(FLERR,arg[1]);
-  inet   = ((narg > 2) && (strcmp(arg[2],"unix") == 0) ) ? 0 : 1;
+  const char* mdi_name = strdup(arg[2]);
+  inet   = ((narg > 3) && (strcmp(arg[3],"unix") == 0) ) ? 0 : 1;
 
   master = (comm->me==0) ? 1 : 0;
 
@@ -366,6 +367,11 @@ void Driver::command(int narg, char **arg)
     if (strcmp(header,"STATUS      ") == 0 ) {
       if (master) {
 	writebuffer(driver_socket,"READY       ",MSGLEN, error);
+      }
+    }
+    else if (strcmp(header,"<NAME       ") == 0 ) {
+      if (master) {
+	MDI_Send_Command(mdi_name, &driver_socket);
       }
     }
     else if (strcmp(header,">NAT        ") == 0 ) {
