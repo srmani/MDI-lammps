@@ -334,7 +334,7 @@ void Driver::command(int narg, char **arg)
   // open the socket
   if (master) {
     //open_socket(driver_socket, inet, port, host, error);
-    ierr = MDI_Open(&driver_socket, &inet, &port, host);
+    driver_socket = MDI_Open(inet, port, host);
   } else driver_socket=0;
 
   // create instance of Irregular class
@@ -371,7 +371,7 @@ void Driver::command(int narg, char **arg)
     }
     else if (strcmp(header,"<NAME       ") == 0 ) {
       if (master) {
-	MDI_Send_Command(mdi_name, &driver_socket);
+	MDI_Send_Command(mdi_name, driver_socket);
       }
     }
     else if (strcmp(header,">NAT        ") == 0 ) {
