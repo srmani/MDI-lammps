@@ -139,7 +139,7 @@ void Driver::command(int narg, char **arg)
     }
     else if (strcmp(command,">COORD      ") == 0 ) {
       // receive the coordinate information
-      read_coordinates(error);
+      receive_coordinates(error);
     }
     else if (strcmp(command,"<COORD      ") == 0 ) {
       // send the coordinate information
@@ -153,7 +153,7 @@ void Driver::command(int narg, char **arg)
       send_energy(error);
     }
     else if (strcmp(command,"<FORCES     ") == 0 ) {
-      write_forces(error);
+      send_forces(error);
     }
     else if (strcmp(command,">FORCES     ") == 0 ) {
       receive_forces(error);
@@ -179,7 +179,7 @@ void Driver::command(int narg, char **arg)
 }
 
 
-void Driver::read_coordinates(Error* error)
+void Driver::receive_coordinates(Error* error)
 /* Writes to a socket.
 
    Args:
@@ -387,7 +387,7 @@ void Driver::send_masses(Error* error)
 }
 
 
-void Driver::write_forces(Error* error)
+void Driver::send_forces(Error* error)
 /* Writes to a socket.
 
    Args:
