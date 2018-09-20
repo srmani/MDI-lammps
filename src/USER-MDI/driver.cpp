@@ -92,174 +92,8 @@ typedef struct taginthash_t {
 
 /* Utility functions to simplify the interface with POSIX sockets */
 
-static void open_socket(int &sockfd, int inet, int port, const char* host,
-                        Error *error)
-/* Opens a socket.
-
-   Args:
-   sockfd: The id of the socket that will be created.
-   inet: An integer that determines whether the socket will be an inet or unix
-   domain socket. Gives unix if 0, inet otherwise.
-   port: The port number for the socket to be created. Low numbers are often
-   reserved for important channels, so use of numbers of 4 or more digits is
-   recommended.
-   host: The name of the host server.
-   error: pointer to a LAMMPS Error object
-*/
-{
-  int ai_err;
-
-#ifdef _WIN32
-  error->one(FLERR,"i-PI socket implementation requires UNIX environment");
-#else
-  if (inet>0) {  // creates an internet socket
-
-    /*
-    // fetches information on the host
-    struct addrinfo hints, *res;
-    char service[256];
-
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_flags = AI_PASSIVE;
-
-    sprintf(service,"%d",port); // convert the port number to a string
-    ai_err = getaddrinfo(host, service, &hints, &res);
-    if (ai_err!=0)
-      error->one(FLERR,"Error fetching host data. Wrong host name?");
-
-    // creates socket
-    sockfd = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-    if (sockfd < 0)
-      error->one(FLERR,"Error opening socket");
-
-    // makes connection
-    if (connect(sockfd, res->ai_addr, res->ai_addrlen) < 0)
-      error->one(FLERR,"Error opening INET socket: wrong port or server unreachable");
-    freeaddrinfo(res);
-    */
-
-  int ret;
-  struct sockaddr_in driver_address;
-  int i;
-  //char *serv_host = "localhost";
-  //string readline;
-  int port;
-  struct hostent *host_ptr;
-  //ifstream hostfile("../hostname");
-  FILE *hostfile;
-  char buff[255];
-  int delay_value = 1;
-
-  port = 8021;
-
-  printf("In C code TESTING\n");
-
-
-
-  hostfile = fopen("../hostname","r");
-  fgets(buff, 255, (FILE*)hostfile);
-
-  printf("Driver hostname: %s\n",buff);
-
-  int hlen = 10;
-  /*
-  for (i=0; i < hlen; i++) {
-    serv_host[i] = buff[i];
-  }
-  */
-  hlen = strlen(buff);
-  printf("hostname length: %i\n",hlen);
-
-  char serv_host[hlen];
-  for (i=0; i < hlen; i++) {
-    serv_host[i] = buff[i];
-  }
-  serv_host[hlen-1] = '\0';
-
-  /*
-  if (hostfile.is_open()) {
-    //read the first line
-    getline(hostfile,readline);
-  }
-  printf("%%% HOSTNAME: %s\n",readline);
-  int hlen = readline.length();
-  char serv_host[hlen+1];
-  strcpy(serv_host, readline.c_str());
-  */
-  printf("Driver hostname: %s\n",serv_host);
-  printf("Driver hostname: %s\n",serv_host);
-
-
-
-
-
-  //get the address of the host
-  host_ptr = gethostbyname(serv_host);
-  if (host_ptr == NULL) {
-    error->one(FLERR,"Error in gethostbyname");
-  }
-  if (host_ptr->h_addrtype != AF_INET) {
-    error->one(FLERR,"Unkown address type");
-  }
-
-  bzero((char *) &driver_address, sizeof(driver_address));
-  driver_address.sin_family = AF_INET;
-  driver_address.sin_addr.s_addr = 
-    ((struct in_addr *)host_ptr->h_addr_list[0])->s_addr;
-  driver_address.sin_port = htons(port);
-
-  //create the socket
-  sockfd = socket(AF_INET, SOCK_STREAM, 0);
-  if (sockfd < 0) {
-    error->one(FLERR,"Could not create socket");
-  }
-  printf("Here is the socket: %i\n",sockfd);
-
-  //<<<
-  ret = setsockopt(sockfd, IPPROTO_TCP, TCP_NODELAY, &delay_value, sizeof(int));
-  if (ret < 0) {
-    error->one(FLERR,"Could not turn off TCP delay");
-  }
-  //>>>
-
-  //connect to the driver
-  ret = connect(sockfd, (const struct sockaddr *) &driver_address, sizeof(struct sockaddr_un));
-  if (ret < 0) {
-    error->one(FLERR,"Could not connect to the driver");
-  }
-
-
-
-  } else {  // creates a unix socket
-    struct sockaddr_un serv_addr;
-
-    // fills up details of the socket addres
-    memset(&serv_addr, 0, sizeof(serv_addr));
-    serv_addr.sun_family = AF_UNIX;
-    strcpy(serv_addr.sun_path, "/tmp/ipi_");
-    strcpy(serv_addr.sun_path+9, host);
-
-    // creates the socket
-    sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
-
-    // connects
-    if (connect(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
-      error->one(FLERR,"Error opening UNIX socket: server may not be running "
-                 "or the path to the socket unavailable");
-  }
-#endif
-}
-
+/*
 static void writebuffer(int sockfd, const char *data, int len, Error* error)
-/* Writes to a socket.
-
-   Args:
-   sockfd: The id of the socket that will be written to.
-   data: The data to be written to the socket.
-   len: The length of the data in bytes.
-*/
 {
   int n;
 
@@ -271,13 +105,6 @@ static void writebuffer(int sockfd, const char *data, int len, Error* error)
 
 
 static void readbuffer(int sockfd, char *data, int len, Error* error)
-/* Reads from a socket.
-
-   Args:
-   sockfd: The id of the socket that will be read from.
-   data: The storage array for data read from the socket.
-   len: The length of the data in bytes.
-*/
 {
   int n, nr;
 
@@ -291,6 +118,7 @@ static void readbuffer(int sockfd, char *data, int len, Error* error)
   if (n == 0)
     error->one(FLERR,"Error reading from socket: broken connection");
 }
+*/
 
 
 /* ---------------------------------------------------------------------- */
@@ -332,9 +160,11 @@ void Driver::command(int narg, char **arg)
   */
 
   // open the socket
+  int ierr;
   if (master) {
-    //open_socket(driver_socket, inet, port, host, error);
     driver_socket = MDI_Open(inet, port, host);
+    if (driver_socket <= 0)
+      error->all(FLERR,"Unable to connect to driver");
   } else driver_socket=0;
 
   // create instance of Irregular class
@@ -343,7 +173,7 @@ void Driver::command(int narg, char **arg)
   /* ----------------------------------------------------------------- */
   // Answer commands from the driver
   /* ----------------------------------------------------------------- */
-  char header[MSGLEN+1];
+  char command[MDI_COMMAND_LENGTH+1];
 
   bool exit_flag = false;
 
@@ -351,87 +181,99 @@ void Driver::command(int narg, char **arg)
 
     if (master) { 
       // read the next command from the driver
-      readbuffer(driver_socket, header, MSGLEN, error);
-      header[MSGLEN]=0;
+      ierr = MDI_Recv_Command(command, driver_socket);
+      if (ierr != 0)
+        error->all(FLERR,"Unable to receive command from driver");
+      command[MDI_COMMAND_LENGTH]=0;
     }
     // broadcast the command to the other tasks
-    MPI_Bcast(header,12,MPI_CHAR,0,world);
+    MPI_Bcast(command,MDI_COMMAND_LENGTH,MPI_CHAR,0,world);
     
     /*
     if (screen)
-      fprintf(screen,"Read label from driver: %s\n",header);
+      fprintf(screen,"Read label from driver: %s\n",command);
     if (logfile)
-      fprintf(logfile,"Read label from driver: %s\n",header);
+      fprintf(logfile,"Read label from driver: %s\n",command);
     */
 
-    if (strcmp(header,"STATUS      ") == 0 ) {
+    if (strcmp(command,"STATUS      ") == 0 ) {
       if (master) {
-	writebuffer(driver_socket,"READY       ",MSGLEN, error);
+	ierr = MDI_Send_Command("READY", driver_socket);
+        if (ierr != 0)
+          error->all(FLERR,"Unable to return status to driver");
       }
     }
-    else if (strcmp(header,"<NAME       ") == 0 ) {
+    else if (strcmp(command,"<NAME       ") == 0 ) {
       if (master) {
-	MDI_Send_Command(mdi_name, driver_socket);
+	ierr = MDI_Send_Command(mdi_name, driver_socket);
+        if (ierr != 0)
+          error->all(FLERR,"Unable to send name to driver");
       }
     }
-    else if (strcmp(header,">NAT        ") == 0 ) {
+    else if (strcmp(command,">NAT        ") == 0 ) {
       if (master) {
-	readbuffer(driver_socket, (char*) &atom->natoms, 4, error);
+        ierr = MDI_Recv((char*) &atom->natoms, 1, MDI_INT, driver_socket);
+        if (ierr != 0)
+          error->all(FLERR,"Unable to receive number of atoms from driver");
       }
       MPI_Bcast(&atom->natoms,1,MPI_INTEGER,0,world);
     }
-    else if (strcmp(header,"<NAT        ") == 0 ) {
+    else if (strcmp(command,"<NAT        ") == 0 ) {
       if (master) {
-	writebuffer(driver_socket, (char*) &atom->natoms, 4, error);
+        ierr = MDI_Send((char*) &atom->natoms, 1, MDI_INT, driver_socket);
+        if (ierr != 0)
+          error->all(FLERR,"Unable to send number of atoms to driver");
       }
     }
-    else if (strcmp(header,"<NTYPES     ") == 0 ) {
+    else if (strcmp(command,"<NTYPES     ") == 0 ) {
       if (master) {
-	writebuffer(driver_socket, (char*) &atom->ntypes, 4, error);
+        ierr = MDI_Send((char*) &atom->ntypes, 1, MDI_INT, driver_socket);
+        if (ierr != 0)
+          error->all(FLERR,"Unable to send number of atom types to driver");
       }
     }
-    else if (strcmp(header,"<TYPES      ") == 0 ) {
+    else if (strcmp(command,"<TYPES      ") == 0 ) {
       // send the atom types
       send_types(error);
     }
-    else if (strcmp(header,"<MASS       ") == 0 ) {
+    else if (strcmp(command,"<MASS       ") == 0 ) {
       // send the atom types
       send_masses(error);
     }
-    else if (strcmp(header,"<CELL       ") == 0 ) {
+    else if (strcmp(command,"<CELL       ") == 0 ) {
       send_cell(error);
     }
-    else if (strcmp(header,">COORD      ") == 0 ) {
+    else if (strcmp(command,">COORD      ") == 0 ) {
       // receive the coordinate information
       read_coordinates(error);
     }
-    else if (strcmp(header,"<COORD      ") == 0 ) {
+    else if (strcmp(command,"<COORD      ") == 0 ) {
       // send the coordinate information
       send_coordinates(error);
     }
-    else if (strcmp(header,"<CHARGE     ") == 0 ) {
+    else if (strcmp(command,"<CHARGE     ") == 0 ) {
       // send the charges
       send_charges(error);
     }
-    else if (strcmp(header,"<ENERGY     ") == 0 ) {
+    else if (strcmp(command,"<ENERGY     ") == 0 ) {
       send_energy(error);
     }
-    else if (strcmp(header,"<FORCES     ") == 0 ) {
+    else if (strcmp(command,"<FORCES     ") == 0 ) {
       write_forces(error);
     }
-    else if (strcmp(header,">FORCES     ") == 0 ) {
+    else if (strcmp(command,">FORCES     ") == 0 ) {
       receive_forces(error);
     }
-    else if (strcmp(header,"+FORCES     ") == 0 ) {
+    else if (strcmp(command,"+FORCES     ") == 0 ) {
       add_forces(error);
     }
-    else if (strcmp(header,"MD_INIT     ") == 0 ) {
+    else if (strcmp(command,"MD_INIT     ") == 0 ) {
       md_init(error);
     }
-    else if (strcmp(header,"TIMESTEP    ") == 0 ) {
+    else if (strcmp(command,"TIMESTEP    ") == 0 ) {
       timestep(error);
     }
-    else if (strcmp(header,"EXIT        ") == 0 ) {
+    else if (strcmp(command,"EXIT        ") == 0 ) {
       exit_flag = true;
     }
     else {
@@ -460,7 +302,9 @@ void Driver::read_coordinates(Error* error)
   buffer = new double[3*atom->natoms];
 
   if (master) {
-    readbuffer(driver_socket, (char*) buffer, (3*atom->natoms)*sizeof(double), error);
+    ierr = MDI_Recv((char*) buffer, 3*atom->natoms, MDI_DOUBLE, driver_socket);
+    if (ierr != 0)
+      error->all(FLERR,"Unable to receive coordinates from driver");
   }
   MPI_Bcast(buffer,3*atom->natoms,MPI_DOUBLE,0,world);
 
@@ -530,8 +374,10 @@ void Driver::send_coordinates(Error* error)
 
   MPI_Reduce(coords, coords_reduced, 3*atom->natoms, MPI_DOUBLE, MPI_SUM, 0, world);
 
-  if (master) { 
-    writebuffer(driver_socket, (char*) coords_reduced, (3*atom->natoms)*sizeof(double), error);
+  if (master) {
+    ierr = MDI_Send((char*) coords_reduced, 3*atom->natoms, MDI_DOUBLE, driver_socket);
+    if (ierr != 0)
+      error->all(FLERR,"Unable to send coordinates to driver");
   }
 }
 
@@ -567,7 +413,9 @@ void Driver::send_charges(Error* error)
   MPI_Reduce(charges, charges_reduced, atom->natoms, MPI_DOUBLE, MPI_SUM, 0, world);
 
   if (master) { 
-    writebuffer(driver_socket, (char*) charges_reduced, (atom->natoms)*sizeof(double), error);
+    ierr = MDI_Send((char*) charges_reduced, atom->natoms, MDI_DOUBLE, driver_socket);
+    if (ierr != 0)
+      error->all(FLERR,"Unable to send charges to driver");
   }
 }
 
@@ -601,8 +449,10 @@ void Driver::send_energy(Error* error)
   // convert the energy to atomic units
   pe *= MDI_KELVIN_TO_HARTREE/force->boltz;
 
-  if (master) { 
-    writebuffer(driver_socket, (char*) potential_energy, sizeof(double), error);
+  if (master) {
+    ierr = MDI_Send((char*) potential_energy, 1, MDI_DOUBLE, driver_socket);
+    if (ierr != 0)
+      error->all(FLERR,"Unable to send potential energy to driver");
   }
 }
 
@@ -619,7 +469,9 @@ void Driver::send_types(Error* error)
   int * const type = atom->type;
 
   if (master) { 
-    writebuffer(driver_socket, (char*) type, (atom->natoms)*sizeof(int), error);
+    ierr = MDI_Send((char*) type, atom->natoms, MDI_INT, driver_socket);
+    if (ierr != 0)
+      error->all(FLERR,"Unable to send atom types to driver");
   }
 }
 
@@ -636,7 +488,9 @@ void Driver::send_masses(Error* error)
   double * const mass = atom->mass;
 
   if (master) { 
-    writebuffer(driver_socket, (char*) mass, (atom->ntypes+1)*sizeof(double), error);
+    ierr = MDI_Send((char*) mass, atom->ntypes+1, MDI_DOUBLE, driver_socket);
+    if (ierr != 0)
+      error->all(FLERR,"Unable to send atom masses to driver");
   }
 }
 
@@ -711,8 +565,10 @@ void Driver::write_forces(Error* error)
 
   MPI_Reduce(forces, forces_reduced, 3*atom->natoms, MPI_DOUBLE, MPI_SUM, 0, world);
 
-  if (master) { 
-    writebuffer(driver_socket, (char*) forces_reduced, (3*atom->natoms)*sizeof(double), error);
+  if (master) {
+    ierr = MDI_Send((char*) forces_reduced, 3*atom->natoms, MDI_DOUBLE, driver_socket);
+    if (ierr != 0)
+      error->all(FLERR,"Unable to send atom forces to driver");
   }
 
   if (screen)
@@ -759,7 +615,9 @@ void Driver::receive_forces(Error* error)
   forces = new double[3*atom->natoms];
 
   if (master) {
-    readbuffer(driver_socket, (char*) forces, (3*atom->natoms)*sizeof(double), error);
+    ierr = MDI_Recv((char*) forces, 3*atom->natoms, MDI_DOUBLE, driver_socket);
+    if (ierr != 0)
+      error->all(FLERR,"Unable to receive atom forces to driver");
   }
   MPI_Bcast(forces,3*atom->natoms,MPI_DOUBLE,0,world);
 
@@ -792,7 +650,9 @@ void Driver::add_forces(Error* error)
   forces = new double[3*atom->natoms];
 
   if (master) {
-    readbuffer(driver_socket, (char*) forces, (3*atom->natoms)*sizeof(double), error);
+    ierr = MDI_Recv((char*) forces, 3*atom->natoms, MDI_DOUBLE, driver_socket);
+    if (ierr != 0)
+      error->all(FLERR,"Unable to receive atom +forces to driver");
   }
   MPI_Bcast(forces,3*atom->natoms,MPI_DOUBLE,0,world);
   for (int i = 0; i < 3*atom->natoms; i++) {
@@ -835,7 +695,9 @@ void Driver::send_cell(Error* error)
   celldata[8] = domain->yz;
 
   if (master) { 
-    writebuffer(driver_socket, (char*) celldata, (9)*sizeof(double), error);
+    ierr = MDI_Recv((char*) celldata, 9, MDI_DOUBLE, driver_socket);
+    if (ierr != 0)
+      error->all(FLERR,"Unable to receive cell dimensions from driver");
   }
 }
 
