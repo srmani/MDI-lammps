@@ -53,8 +53,14 @@ class FixDriver : public Fix {
 #endif
 #endif
 
-// Local Variables:
-// mode: c++
-// c-basic-offset: 2
-// indent-tabs-mode: nil
-// End:
+/* ERROR/WARNING messages:
+
+E: Illegal ... command
+
+Self-explanatory.
+
+E: Potential energy ID for fix driver does not exist
+
+Self-explanatory.
+
+*/

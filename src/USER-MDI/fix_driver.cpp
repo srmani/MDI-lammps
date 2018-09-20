@@ -12,7 +12,8 @@
 ------------------------------------------------------------------------- */
 
 /* ----------------------------------------------------------------------
-   Contributing author:  Axel Kohlmeyer (ICTP)
+   Contributing author: Taylor Barnes (MolSSI)
+   MolSSI Driver Interface (MDI) support for LAMMPS
 ------------------------------------------------------------------------- */
 
 #include "fix_driver.h"
@@ -38,7 +39,7 @@ using namespace FixConst;
 
 /***************************************************************
  * create class and parse arguments in LAMMPS script. Syntax:
- * fix ID group-ID qmmm [couple <group-ID>]
+ * fix ID group-ID driver [couple <group-ID>]
  ***************************************************************/
 FixDriver::FixDriver(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg),
@@ -53,9 +54,6 @@ FixDriver::FixDriver(LAMMPS *lmp, int narg, char **arg) :
   for (int i=0; i< 3*atom->natoms; i++) {
     add_force[i] = 0.0;
   }
-
-  if (screen) fprintf(screen,"add_force atoms: %i\n",atom->natoms);
-  if (logfile) fprintf(logfile,"add_force atoms: %i\n",atom->natoms);
 
   // create a new compute pe style
   // id = fix-ID + pe, compute group = all
@@ -116,20 +114,9 @@ void FixDriver::exchange_forces()
 void FixDriver::init()
 {
 
-  /*
-  // allocate arrays
-  memory->create(add_force,3*atom->natoms,"driver:add_force");
-  for (int i=0; i< 3*atom->natoms; i++) {
-    add_force[i] = 0.0;
-  }
-
-  if (screen) fprintf(screen,"add_force atoms: %i\n",atom->natoms);
-  if (logfile) fprintf(logfile,"add_force atoms: %i\n",atom->natoms);
-  */
-
   int icompute = modify->find_compute(id_pe);
   if (icompute < 0)
-    error->all(FLERR,"Potential energy ID for fix neb does not exist");
+    error->all(FLERR,"Potential energy ID for fix driver does not exist");
   pe = modify->compute[icompute];
 
   return;
@@ -144,7 +131,6 @@ void FixDriver::setup(int)
 
   //compute the potential energy
   potential_energy = pe->compute_scalar();
-  //printf("SSSSSS: %f\n",energy);
 
   // trigger potential energy computation on next timestep
   pe->addstep(update->ntimestep+1);
@@ -156,19 +142,9 @@ void FixDriver::post_force(int vflag)
 {
   // calculate the energy
   potential_energy = pe->compute_scalar();
-  //printf("RRRRRR: %f\n",energy);
 
   exchange_forces();
 
   // trigger potential energy computation on next timestep
   pe->addstep(update->ntimestep+1);
 }
-
-
-// Local Variables:
-// mode: c++
-// compile-command: "make -j4 openmpi"
-// c-basic-offset: 2
-// fill-column: 76
-// indent-tabs-mode: nil
-// End:
