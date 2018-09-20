@@ -27,6 +27,7 @@ namespace LAMMPS_NS {
 class Driver : protected Pointers {
  public:
   Driver(class LAMMPS *);
+  virtual ~Driver();
   void command(int, char **);
 
  protected:

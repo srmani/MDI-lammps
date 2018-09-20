@@ -11,6 +11,11 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
+/* ----------------------------------------------------------------------
+   Contributing author: Taylor Barnes (MolSSI)
+   MolSSI Driver Interface (MDI) support for LAMMPS
+------------------------------------------------------------------------- */
+
 #include <string.h>
 #include "driver.h"
 #include "atom.h"
@@ -35,6 +40,13 @@ using namespace LAMMPS_NS;
 
 Driver::Driver(LAMMPS *lmp) : Pointers(lmp) {
   md_initialized = false;
+
+  // create instance of Irregular class
+  irregular = new Irregular(lmp);
+}
+
+Driver::~Driver() {
+  delete irregular;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -42,7 +54,7 @@ Driver::Driver(LAMMPS *lmp) : Pointers(lmp) {
 void Driver::command(int narg, char **arg)
 {
   /* format for driver command:
-   * driver hostname port [unix]
+   * driver hostname port mdi_name [unix]
    */
   if (narg < 3) error->all(FLERR,"Illegal driver command");
 
@@ -68,9 +80,6 @@ void Driver::command(int narg, char **arg)
       error->all(FLERR,"Unable to connect to driver");
   } else driver_socket=0;
 
-  // create instance of Irregular class
-  irregular = new Irregular(lmp);
-
   /* ----------------------------------------------------------------- */
   // Answer commands from the driver
   /* ----------------------------------------------------------------- */
@@ -91,6 +100,7 @@ void Driver::command(int narg, char **arg)
     MPI_Bcast(command,MDI_COMMAND_LENGTH,MPI_CHAR,0,world);
 
     if (strcmp(command,"STATUS      ") == 0 ) {
+      // send the calculation status to the driver
       if (master) {
 	ierr = MDI_Send_Command("READY", driver_socket);
         if (ierr != 0)
@@ -98,6 +108,7 @@ void Driver::command(int narg, char **arg)
       }
     }
     else if (strcmp(command,"<NAME       ") == 0 ) {
+      // send the calculation name to the driver
       if (master) {
 	ierr = MDI_Send_Command(mdi_name, driver_socket);
         if (ierr != 0)
@@ -105,6 +116,7 @@ void Driver::command(int narg, char **arg)
       }
     }
     else if (strcmp(command,">NAT        ") == 0 ) {
+      // receive the number of atoms from the driver
       if (master) {
         ierr = MDI_Recv((char*) &atom->natoms, 1, MDI_INT, driver_socket);
         if (ierr != 0)
@@ -113,6 +125,7 @@ void Driver::command(int narg, char **arg)
       MPI_Bcast(&atom->natoms,1,MPI_INTEGER,0,world);
     }
     else if (strcmp(command,"<NAT        ") == 0 ) {
+      // send the number of atoms to the driver
       if (master) {
         ierr = MDI_Send((char*) &atom->natoms, 1, MDI_INT, driver_socket);
         if (ierr != 0)
@@ -120,6 +133,7 @@ void Driver::command(int narg, char **arg)
       }
     }
     else if (strcmp(command,"<NTYPES     ") == 0 ) {
+      // send the number of atom types to the driver
       if (master) {
         ierr = MDI_Send((char*) &atom->ntypes, 1, MDI_INT, driver_socket);
         if (ierr != 0)
@@ -135,6 +149,7 @@ void Driver::command(int narg, char **arg)
       send_masses(error);
     }
     else if (strcmp(command,"<CELL       ") == 0 ) {
+      // send the cell dimensions to the driver
       send_cell(error);
     }
     else if (strcmp(command,">COORD      ") == 0 ) {
@@ -150,27 +165,36 @@ void Driver::command(int narg, char **arg)
       send_charges(error);
     }
     else if (strcmp(command,"<ENERGY     ") == 0 ) {
+      // send the potential energy to the driver
       send_energy(error);
     }
     else if (strcmp(command,"<FORCES     ") == 0 ) {
+      // send the forces to the driver
       send_forces(error);
     }
     else if (strcmp(command,">FORCES     ") == 0 ) {
+      // receive the forces from the driver
       receive_forces(error);
     }
     else if (strcmp(command,"+FORCES     ") == 0 ) {
+      // receive additional forces from the driver
+      // these are added prior to SHAKE or other post-processing
       add_forces(error);
     }
     else if (strcmp(command,"MD_INIT     ") == 0 ) {
+      // initialize a new MD simulation
       md_init(error);
     }
     else if (strcmp(command,"TIMESTEP    ") == 0 ) {
+      // perform an MD timestep
       timestep(error);
     }
     else if (strcmp(command,"EXIT        ") == 0 ) {
+      // exit the driver code
       exit_flag = true;
     }
     else {
+      // the command is not supported
       error->all(FLERR,"Unknown command from driver");
     }
 
@@ -180,13 +204,6 @@ void Driver::command(int narg, char **arg)
 
 
 void Driver::receive_coordinates(Error* error)
-/* Writes to a socket.
-
-   Args:
-   sockfd: The id of the socket that will be written to.
-   data: The data to be written to the socket.
-   len: The length of the data in bytes.
-*/
 {
   double posconv;
   posconv=force->angstrom/MDI_ANGSTROM_TO_BOHR;
@@ -228,17 +245,12 @@ void Driver::receive_coordinates(Error* error)
   if (domain->triclinic) domain->x2lamda(atom->nlocal);
   if (irregular->migrate_check()) irregular->migrate_atoms();
   if (domain->triclinic) domain->lamda2x(atom->nlocal);
+
+  delete [] buffer;
 }
 
 
 void Driver::send_coordinates(Error* error)
-/* Writes to a socket.
-
-   Args:
-   sockfd: The id of the socket that will be written to.
-   data: The data to be written to the socket.
-   len: The length of the data in bytes.
-*/
 {
   double posconv;
   posconv=force->angstrom/MDI_ANGSTROM_TO_BOHR;
@@ -271,17 +283,13 @@ void Driver::send_coordinates(Error* error)
     if (ierr != 0)
       error->all(FLERR,"Unable to send coordinates to driver");
   }
+
+  delete [] coords;
+  delete [] coords_reduced;
 }
 
 
 void Driver::send_charges(Error* error)
-/* Writes to a socket.
-
-   Args:
-   sockfd: The id of the socket that will be written to.
-   data: The data to be written to the socket.
-   len: The length of the data in bytes.
-*/
 {
   double *charges;
   double *charges_reduced;
@@ -309,17 +317,13 @@ void Driver::send_charges(Error* error)
     if (ierr != 0)
       error->all(FLERR,"Unable to send charges to driver");
   }
+
+  delete [] charges;
+  delete [] charges_reduced;
 }
 
 
 void Driver::send_energy(Error* error)
-/* Writes to a socket.
-
-   Args:
-   sockfd: The id of the socket that will be written to.
-   data: The data to be written to the socket.
-   len: The length of the data in bytes.
-*/
 {
 
   double pe;
@@ -350,13 +354,6 @@ void Driver::send_energy(Error* error)
 
 
 void Driver::send_types(Error* error)
-/* Writes to a socket.
-
-   Args:
-   sockfd: The id of the socket that will be written to.
-   data: The data to be written to the socket.
-   len: The length of the data in bytes.
-*/
 {
   int * const type = atom->type;
 
@@ -369,13 +366,6 @@ void Driver::send_types(Error* error)
 
 
 void Driver::send_masses(Error* error)
-/* Writes to a socket.
-
-   Args:
-   sockfd: The id of the socket that will be written to.
-   data: The data to be written to the socket.
-   len: The length of the data in bytes.
-*/
 {
   double * const mass = atom->mass;
 
@@ -388,13 +378,6 @@ void Driver::send_masses(Error* error)
 
 
 void Driver::send_forces(Error* error)
-/* Writes to a socket.
-
-   Args:
-   sockfd: The id of the socket that will be written to.
-   data: The data to be written to the socket.
-   len: The length of the data in bytes.
-*/
 {
   double potconv, posconv, forceconv;
   potconv=MDI_KELVIN_TO_HARTREE/force->boltz;
@@ -481,6 +464,10 @@ void Driver::send_forces(Error* error)
     //}
   }
 
+  delete [] forces;
+  delete [] forces_reduced;
+  delete [] x_buf;
+
   if (screen)
     fprintf(screen,"End of write_forces\n");
   if (logfile)
@@ -490,13 +477,6 @@ void Driver::send_forces(Error* error)
 
 
 void Driver::receive_forces(Error* error)
-/* Writes to a socket.
-
-   Args:
-   sockfd: The id of the socket that will be written to.
-   data: The data to be written to the socket.
-   len: The length of the data in bytes.
-*/
 {
   double potconv, posconv, forceconv;
   potconv=MDI_KELVIN_TO_HARTREE/force->boltz;
@@ -528,6 +508,8 @@ void Driver::receive_forces(Error* error)
 
     //}
   }
+
+  delete [] forces;
 }
 
 
@@ -562,17 +544,12 @@ void Driver::add_forces(Error* error)
       }
     }
   }
+
+  delete [] forces;
 }
 
 
 void Driver::send_cell(Error* error)
-/* Writes to a socket.
-
-   Args:
-   sockfd: The id of the socket that will be written to.
-   data: The data to be written to the socket.
-   len: The length of the data in bytes.
-*/
 {
   double celldata[9];
 
@@ -595,13 +572,6 @@ void Driver::send_cell(Error* error)
 
 
 void Driver::md_init(Error* error)
-/* Writes to a socket.
-
-   Args:
-   sockfd: The id of the socket that will be written to.
-   data: The data to be written to the socket.
-   len: The length of the data in bytes.
-*/
 {
   // calculate the forces
   update->whichflag = 1; // 1 for dynamics
@@ -620,13 +590,6 @@ void Driver::md_init(Error* error)
 
 
 void Driver::timestep(Error* error)
-/* Writes to a socket.
-
-   Args:
-   sockfd: The id of the socket that will be written to.
-   data: The data to be written to the socket.
-   len: The length of the data in bytes.
-*/
 {
   // calculate the forces
   update->whichflag = 1; // 1 for dynamics
