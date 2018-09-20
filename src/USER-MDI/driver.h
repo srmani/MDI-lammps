@@ -66,34 +66,29 @@ Self-explanatory.  Check the input script syntax and compare to the
 documentation for the command.  You can use -echo screen as a
 command-line option when running LAMMPS to see the offending line.
 
-E: Run command before simulation box is defined
-
-The run command cannot be used before a read_data, read_restart, or
-create_box command.
-
-E: Invalid run command N value
-
-The number of timesteps must fit in a 32-bit integer.  If you want to
-run for more steps than this, perform multiple shorter runs.
-
-E: Invalid run command upto value
+E: Cannot use driver command without atom IDs
 
 Self-explanatory.
 
-E: Invalid run command start/stop value
+E: Driver command requires consecutive atom IDs
 
 Self-explanatory.
 
-E: Run command start value is after start of run
+E: Unable to connect to driver
+
+Self-explanatory.  Check to confirm that the port number used in 
+the LAMMPS driver command is the same as the port number used by
+the driver.
+
+E: Unable to ... driver
 
 Self-explanatory.
 
-E: Run command stop value is before end of run
+E: Unknown command from driver
 
-Self-explanatory.
-
-E: Too many timesteps
-
-The cumulative timesteps must fit in a 64-bit integer.
+The driver sent a command that is not supported by the LAMMPS 
+interface.  In some cases this might be because a nonsensical 
+command was sent (i.e. "SCF").  In other cases, the LAMMPS 
+interface might benefit from being expanded.
 
 */
