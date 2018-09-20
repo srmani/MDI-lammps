@@ -99,6 +99,11 @@ void Driver::command(int narg, char **arg)
     // broadcast the command to the other tasks
     MPI_Bcast(command,MDI_COMMAND_LENGTH,MPI_CHAR,0,world);
 
+    if (screen)
+      fprintf(screen,"MDI command: %s\n",command);
+    if (logfile)
+      fprintf(logfile,"MDI command: %s:\n",command);
+
     if (strcmp(command,"STATUS      ") == 0 ) {
       // send the calculation status to the driver
       if (master) {
@@ -223,13 +228,10 @@ void Driver::receive_coordinates(Error* error)
   double **x = atom->x;
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
-  //if (igroup == atom->firstgroup) nlocal = atom->nfirst;
   for (int i = 0; i < nlocal; i++) {
-    //if (mask[i] & groupbit) {
-      x[i][0]=buffer[3*(atom->tag[i]-1)+0]*posconv;
-      x[i][1]=buffer[3*(atom->tag[i]-1)+1]*posconv;
-      x[i][2]=buffer[3*(atom->tag[i]-1)+2]*posconv;
-      //}
+    x[i][0]=buffer[3*(atom->tag[i]-1)+0]*posconv;
+    x[i][1]=buffer[3*(atom->tag[i]-1)+1]*posconv;
+    x[i][2]=buffer[3*(atom->tag[i]-1)+2]*posconv;
   }
 
   // ensure atoms are in current box & update box via shrink-wrap
@@ -265,15 +267,10 @@ void Driver::send_coordinates(Error* error)
   double **x = atom->x;
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
-  //if (igroup == atom->firstgroup) nlocal = atom->nfirst;
   for (int i = 0; i < nlocal; i++) {
-    //if (mask[i] & groupbit) {
-
-      coords[3*(atom->tag[i]-1)+0] = x[i][0]/posconv;
-      coords[3*(atom->tag[i]-1)+1] = x[i][1]/posconv;
-      coords[3*(atom->tag[i]-1)+2] = x[i][2]/posconv;
-
-    //}
+    coords[3*(atom->tag[i]-1)+0] = x[i][0]/posconv;
+    coords[3*(atom->tag[i]-1)+1] = x[i][1]/posconv;
+    coords[3*(atom->tag[i]-1)+2] = x[i][2]/posconv;
   }
 
   MPI_Reduce(coords, coords_reduced, 3*atom->natoms, MPI_DOUBLE, MPI_SUM, 0, world);
@@ -301,13 +298,8 @@ void Driver::send_charges(Error* error)
   double *charge = atom->q;
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
-  //if (igroup == atom->firstgroup) nlocal = atom->nfirst;
   for (int i = 0; i < nlocal; i++) {
-    //if (mask[i] & groupbit) {
-
-      charges[atom->tag[i]-1] = charge[i];
-
-    //}
+    charges[atom->tag[i]-1] = charge[i];
   }
 
   MPI_Reduce(charges, charges_reduced, atom->natoms, MPI_DOUBLE, MPI_SUM, 0, world);
@@ -395,23 +387,13 @@ void Driver::send_forces(Error* error)
   forces_reduced = new double[3*atom->natoms];
   x_buf = new double[3*atom->natoms];
 
-  if (screen)
-    fprintf(screen,"nlocal: %i\n",atom->nlocal);
-  if (logfile)
-    fprintf(logfile,"nlocal: %i:\n",atom->nlocal);
-
   //certain fixes, such as shake, move the coordinates
   //to ensure that the coordinates do not change, store a copy
   double **x = atom->x;
-  //if (igroup == atom->firstgroup) nlocal = atom->nfirst;
   for (int i = 0; i < nlocal; i++) {
-    //if (mask[i] & groupbit) {
-
-      x_buf[3*i+0] = x[i][0];
-      x_buf[3*i+1] = x[i][1];
-      x_buf[3*i+2] = x[i][2];
-
-    //}
+    x_buf[3*i+0] = x[i][0];
+    x_buf[3*i+1] = x[i][1];
+    x_buf[3*i+2] = x[i][2];
   }
 
 
@@ -423,19 +405,10 @@ void Driver::send_forces(Error* error)
 
   // pick local atoms from the buffer
   double **f = atom->f;
-  //if (igroup == atom->firstgroup) nlocal = atom->nfirst;
-  if (screen)
-    fprintf(screen,"Calculating forces:\n");
-  if (logfile)
-    fprintf(logfile,"Calculating forces:\n");
   for (int i = 0; i < nlocal; i++) {
-    //if (mask[i] & groupbit) {
-
-      forces[3*(atom->tag[i]-1)+0] = f[i][0]*forceconv;
-      forces[3*(atom->tag[i]-1)+1] = f[i][1]*forceconv;
-      forces[3*(atom->tag[i]-1)+2] = f[i][2]*forceconv;
-
-    //}
+    forces[3*(atom->tag[i]-1)+0] = f[i][0]*forceconv;
+    forces[3*(atom->tag[i]-1)+1] = f[i][1]*forceconv;
+    forces[3*(atom->tag[i]-1)+2] = f[i][2]*forceconv;
   }
 
   MPI_Reduce(forces, forces_reduced, 3*atom->natoms, MPI_DOUBLE, MPI_SUM, 0, world);
@@ -446,32 +419,17 @@ void Driver::send_forces(Error* error)
       error->all(FLERR,"Unable to send atom forces to driver");
   }
 
-  if (screen)
-    fprintf(screen,"Restoring original coordinates %i\n",atom->nlocal);
-  if (logfile)
-    fprintf(logfile,"Restoring original coordinates %i\n",atom->nlocal);
-
   //restore the original set of coordinates
-  //if (igroup == atom->firstgroup) nlocal = atom->nfirst;
   double **x_new = atom->x;
   for (int i = 0; i < nlocal; i++) {
-    //if (mask[i] & groupbit) {
-
     x_new[i][0] = x_buf[3*i+0];
     x_new[i][1] = x_buf[3*i+1];
     x_new[i][2] = x_buf[3*i+2];
-
-    //}
   }
 
   delete [] forces;
   delete [] forces_reduced;
   delete [] x_buf;
-
-  if (screen)
-    fprintf(screen,"End of write_forces\n");
-  if (logfile)
-    fprintf(logfile,"End of write_forces\n");
 
 }
 
@@ -498,15 +456,10 @@ void Driver::receive_forces(Error* error)
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
 
-  //if (igroup == atom->firstgroup) nlocal = atom->nfirst;
   for (int i = 0; i < nlocal; i++) {
-    //if (mask[i] & groupbit) {
-
     f[i][0] = forces[3*(atom->tag[i]-1)+0]/forceconv;
     f[i][1] = forces[3*(atom->tag[i]-1)+1]/forceconv;
     f[i][2] = forces[3*(atom->tag[i]-1)+2]/forceconv;
-
-    //}
   }
 
   delete [] forces;
@@ -534,10 +487,8 @@ void Driver::add_forces(Error* error)
   }
 
   //identify the driver fix
-  //Fix **fixes = modify->fix;
   for (int i = 0; i < modify->nfix; i++) {
     if (strcmp(modify->fix[i]->style,"driver") == 0) {
-      //Fix *fixd = modify->fix[i];
       FixDriver *fixd = static_cast<FixDriver*>(modify->fix[i]);
       for (int j = 0; j < 3*atom->natoms; j++) {
 	fixd->add_force[j] = forces[j];
