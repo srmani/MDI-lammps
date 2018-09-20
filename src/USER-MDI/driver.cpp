@@ -11,115 +11,25 @@
    See the README file in the top-level LAMMPS directory.
 ------------------------------------------------------------------------- */
 
-#include <stdlib.h>
 #include <string.h>
 #include "driver.h"
 #include "atom.h"
 #include "domain.h"
 #include "update.h"
 #include "force.h"
-#include "integrate.h"
 #include "modify.h"
 #include "output.h"
-#include "finish.h"
-#include "input.h"
 #include "timer.h"
 #include "error.h"
 #include "comm.h"
 #include "irregular.h"
-#include "memory.h"
-#include "fix.h"
+#include "verlet.h"
 #include "fix_driver.h"
 extern "C" {
 #include "mdi.h"
 }
 
-#include "verlet.h"
-#include "neighbor.h"
-
 using namespace LAMMPS_NS;
-
-// socket interface
-#ifndef _WIN32
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <sys/un.h>
-#include <netdb.h>
-#endif
-
-#define MSGLEN 12
-#define MAXLINE 2048
-
-//<<<<<<
-/*
-
-// asks for evaluation of PE at first step
-modify->compute[modify->find_compute("thermo_pe")]->invoked_scalar = -1;
-modify->addstep_compute_all(update->ntimestep + 1);
-
-kspace_flag = (force->kspace) ? 1 : 0;
-
-// when changing nuclear coordinates:
-
-// makes sure that neighbor lists are re-built at each step (cannot make assumptions when cycling over beads!)
-neighbor->delay = 0;
-neighbor->every = 1;
-*/
-//>>>>>>
-
-//const double bohr_to_angstrom = 0.52917720859;
-const double bohr_to_angstrom = 1.0/MDI_ANGSTROM_TO_BOHR;
-//const double force_conv = 3.1668152e-06;
-
-/** hash table top level data structure */
-typedef struct taginthash_t {
-  struct taginthash_node_t **bucket;     /* array of hash nodes */
-  tagint size;                           /* size of the array */
-  tagint entries;                        /* number of entries in table */
-  tagint downshift;                      /* shift cound, used in hash function */
-  tagint mask;                           /* used to select bits for hashing */
-} taginthash_t;
-
-#define HASH_FAIL  -1
-#define HASH_LIMIT  0.5
-
-
-
-
-/* Utility functions to simplify the interface with POSIX sockets */
-
-/*
-static void writebuffer(int sockfd, const char *data, int len, Error* error)
-{
-  int n;
-
-  n = write(sockfd,data,len);
-  if (n < 0)
-    error->one(FLERR,"Error writing to socket: broken connection");
-}
-
-
-
-static void readbuffer(int sockfd, char *data, int len, Error* error)
-{
-  int n, nr;
-
-  n = nr = read(sockfd,data,len);
-
-  while (nr>0 && n<len ) {
-    nr=read(sockfd,&data[n],len-n);
-    n+=nr;
-  }
-
-  if (n == 0)
-    error->one(FLERR,"Error reading from socket: broken connection");
-}
-*/
-
 
 /* ---------------------------------------------------------------------- */
 
@@ -150,15 +60,6 @@ void Driver::command(int narg, char **arg)
 
   master = (comm->me==0) ? 1 : 0;
 
-
-  // allocate arrays
-  /*
-  memory->create(add_force,3*atom->natoms,"driver:add_force");
-  for (int i=0; i< 3*atom->natoms; i++) {
-    add_force[i] = 0.0;
-  }
-  */
-
   // open the socket
   int ierr;
   if (master) {
@@ -188,13 +89,6 @@ void Driver::command(int narg, char **arg)
     }
     // broadcast the command to the other tasks
     MPI_Bcast(command,MDI_COMMAND_LENGTH,MPI_CHAR,0,world);
-    
-    /*
-    if (screen)
-      fprintf(screen,"Read label from driver: %s\n",command);
-    if (logfile)
-      fprintf(logfile,"Read label from driver: %s\n",command);
-    */
 
     if (strcmp(command,"STATUS      ") == 0 ) {
       if (master) {
@@ -295,7 +189,7 @@ void Driver::read_coordinates(Error* error)
 */
 {
   double posconv;
-  posconv=bohr_to_angstrom*force->angstrom;
+  posconv=force->angstrom/MDI_ANGSTROM_TO_BOHR;
 
   // create a buffer to hold the coordinates
   double *buffer;
@@ -347,12 +241,10 @@ void Driver::send_coordinates(Error* error)
 */
 {
   double posconv;
-  posconv=bohr_to_angstrom*force->angstrom;
+  posconv=force->angstrom/MDI_ANGSTROM_TO_BOHR;
 
   double *coords;
   double *coords_reduced;
-
-  fprintf(screen,"bohr_to_angstrom: %f\n",bohr_to_angstrom);
 
   coords = new double[3*atom->natoms];
   coords_reduced = new double[3*atom->natoms];
@@ -506,7 +398,7 @@ void Driver::write_forces(Error* error)
 {
   double potconv, posconv, forceconv;
   potconv=MDI_KELVIN_TO_HARTREE/force->boltz;
-  posconv=bohr_to_angstrom*force->angstrom;
+  posconv=force->angstrom/MDI_ANGSTROM_TO_BOHR;
   forceconv=potconv*posconv;
 
   double *forces;
@@ -608,7 +500,7 @@ void Driver::receive_forces(Error* error)
 {
   double potconv, posconv, forceconv;
   potconv=MDI_KELVIN_TO_HARTREE/force->boltz;
-  posconv=bohr_to_angstrom*force->angstrom;
+  posconv=force->angstrom/MDI_ANGSTROM_TO_BOHR;
   forceconv=potconv*posconv;
 
   double *forces;
@@ -643,7 +535,7 @@ void Driver::add_forces(Error* error)
 {
   double potconv, posconv, forceconv;
   potconv=MDI_KELVIN_TO_HARTREE/force->boltz;
-  posconv=bohr_to_angstrom*force->angstrom;
+  posconv=force->angstrom/MDI_ANGSTROM_TO_BOHR;
   forceconv=potconv*posconv;
 
   double *forces;
@@ -736,45 +628,6 @@ void Driver::timestep(Error* error)
    len: The length of the data in bytes.
 */
 {
-  /*
-  // calculate the forces
-  update->whichflag = 1; // 1 for dynamics
-  //timer->init_timeout();
-  update->nsteps = 1;
-  //update->firststep = update->ntimestep;
-  //update->laststep = update->ntimestep + update->nsteps;
-  //update->beginstep = update->firststep;
-  //update->endstep = update->laststep;
-  lmp->init();
-  //update->integrate->setup();
-  update->integrate->setup_minimal(0);
-  */
-  //update->integrate->setup();
-  //update->integrate->run(1);
-
-  /*
-  modify->initial_integrate(0);
-
-  // calculate the forces
-  update->whichflag = 1; // 1 for dynamics
-  timer->init_timeout();
-  update->nsteps = 1;
-  update->ntimestep = 0;
-  update->nsteps = 1;
-  update->firststep = update->ntimestep;
-  update->laststep = update->ntimestep + update->nsteps;
-  update->beginstep = update->firststep;
-  update->endstep = update->laststep;
-  lmp->init();
-  update->integrate->setup();
-
-  //update->integrate->run(1);
-  modify->initial_integrate(0);
-  modify->final_integrate();
-  //if (n_end_of_step) modify->end_of_step();
-  timer->stamp(Timer::MODIFY);
-  */
-
   // calculate the forces
   update->whichflag = 1; // 1 for dynamics
   timer->init_timeout();
@@ -782,17 +635,6 @@ void Driver::timestep(Error* error)
   update->laststep += 1;
   update->endstep = update->laststep;
   output->next = update->ntimestep + 1;
-  /*
-  timer->init_timeout();
-  update->nsteps = 10;
-  update->ntimestep = 0;
-  update->firststep = update->ntimestep;
-  update->laststep = update->ntimestep + update->nsteps;
-  update->beginstep = update->firststep;
-  update->endstep = update->laststep;
-  */
-  //lmp->init();
-  //update->integrate->setup();
 
   update->integrate->run(1);
 
