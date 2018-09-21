@@ -32,13 +32,7 @@ make yes-user-mdi
 
 #build mdi
 cd ../lib/mdi
-mkdir build
-cd build
-cmake ..
-make
-cd ../
-cp build/molssi_driver_interface/libmdi.a .
-cp molssi_driver_interface/mdi.h .
+python Install.py -m ifort
 
 cd ../reax
 make -j 32 -f Makefile.ifort
