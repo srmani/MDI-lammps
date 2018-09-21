@@ -8,7 +8,7 @@ make yes-user-mdi
 
 #build mdi
 cd ../lib/mdi
-python Install.py -m ifort
+python Install.py -m icc
 
 cd ../../src
 make -j 32 cori2

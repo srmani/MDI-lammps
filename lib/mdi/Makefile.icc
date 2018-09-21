@@ -12,13 +12,13 @@ SHELL = /bin/sh
 
 # which file will be copied to Makefile.lammps
 
-EXTRAMAKE = Makefile.lammps.ifort
+EXTRAMAKE = Makefile.lammps.empty
 
 # ------ MAKE PROCEDURE ------
 
 lib: 	$(OBJ)
 	mkdir build
-	cd build; cmake ..; make
+	cd build; cmake -D CMAKE_C_COMPILER=icc -D CMAKE_CXX_COMPILER=icc --target mdi ..; make
 	cp build/molssi_driver_interface/libmdi.a .
 	cp molssi_driver_interface/mdi.h .
 	@cp $(EXTRAMAKE) Makefile.lammps

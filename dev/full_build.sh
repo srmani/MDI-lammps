@@ -32,7 +32,7 @@ make yes-user-mdi
 
 #build mdi
 cd ../lib/mdi
-python Install.py -m ifort
+python Install.py -m icc
 
 cd ../reax
 make -j 32 -f Makefile.ifort
