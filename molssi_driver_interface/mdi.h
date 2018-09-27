@@ -22,6 +22,9 @@ Contents:
 // length of an MDI command in characters
 extern const int MDI_COMMAND_LENGTH;
 
+// length of an MDI name in characters
+extern const int MDI_NAME_LENGTH;
+
 // MDI data types
 extern const int MDI_INT;
 extern const int MDI_DOUBLE;
@@ -51,7 +54,7 @@ extern const double MDI_EV_TO_HARTREE;
 extern const double MDI_RYDBERG_TO_HARTREE;
 extern const double MDI_KELVIN_TO_HARTREE;
 
-int MDI_Init();
+int MDI_Init(int);
 int MDI_Open(int, int, const char*);
 int MDI_Accept_Connection(int);
 int MDI_Send(const char*, int, int, int);

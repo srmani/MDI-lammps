@@ -5,7 +5,8 @@
    
    IMPLICIT NONE
 
-   INTEGER, PROTECTED, BIND(C, name="MDI_COMMAND_LENGTH") :: MDI_COMMAND_LENGTH
+   INTEGER, PROTECTED, BIND(C, name="MDI_COMMAND_LENGTH")        :: MDI_COMMAND_LENGTH
+   INTEGER, PROTECTED, BIND(C, name="MDI_NAME_LENGTH")           :: MDI_NAME_LENGTH
 
    INTEGER, PROTECTED, BIND(C, name="MDI_INT")                   :: MDI_INT
    INTEGER, PROTECTED, BIND(C, name="MDI_DOUBLE")                :: MDI_DOUBLE
@@ -49,8 +50,9 @@
 
   INTERFACE
 
-     FUNCTION MDI_Init_() bind(c, name="MDI_Init")
+     FUNCTION MDI_Init_(port) bind(c, name="MDI_Init")
        USE, INTRINSIC :: iso_c_binding
+       INTEGER(KIND=C_INT), VALUE               :: port
        INTEGER(KIND=C_INT)                      :: MDI_Init_
      END FUNCTION MDI_Init_
 
@@ -105,11 +107,12 @@
     
   CONTAINS
 
-    SUBROUTINE MDI_Init(sockfd)
+    SUBROUTINE MDI_Init(sockfd, port)
       IMPLICIT NONE
+      INTEGER, INTENT(IN) :: port
       INTEGER, INTENT(OUT) :: sockfd
 
-      sockfd = MDI_Init_()
+      sockfd = MDI_Init_(port)
     END SUBROUTINE MDI_Init
 
     SUBROUTINE MDI_Accept_Connection(sockfd, connection)
