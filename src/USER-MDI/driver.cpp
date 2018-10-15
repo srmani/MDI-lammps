@@ -16,6 +16,7 @@
    MolSSI Driver Interface (MDI) support for LAMMPS
 ------------------------------------------------------------------------- */
 
+#include <mpi.h>
 #include <string.h>
 #include "driver.h"
 #include "atom.h"
@@ -127,7 +128,7 @@ void Driver::command(int narg, char **arg)
         if (ierr != 0)
           error->all(FLERR,"Unable to receive number of atoms from driver");
       }
-      MPI_Bcast(&atom->natoms,1,MPI_INTEGER,0,world);
+      MPI_Bcast(&atom->natoms,1,MPI_INT,0,world);
     }
     else if (strcmp(command,"<NAT        ") == 0 ) {
       // send the number of atoms to the driver
