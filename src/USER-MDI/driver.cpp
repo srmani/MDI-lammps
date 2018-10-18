@@ -121,7 +121,7 @@ void Driver::command(int narg, char **arg)
           error->all(FLERR,"Unable to send name to driver");
       }
     }
-    else if (strcmp(command,">NAT        ") == 0 ) {
+    else if (strcmp(command,">NATOMS     ") == 0 ) {
       // receive the number of atoms from the driver
       if (master) {
         ierr = MDI_Recv((char*) &atom->natoms, 1, MDI_INT, driver_socket);
@@ -130,7 +130,7 @@ void Driver::command(int narg, char **arg)
       }
       MPI_Bcast(&atom->natoms,1,MPI_INT,0,world);
     }
-    else if (strcmp(command,"<NAT        ") == 0 ) {
+    else if (strcmp(command,"<NATOMS     ") == 0 ) {
       // send the number of atoms to the driver
       if (master) {
         ierr = MDI_Send((char*) &atom->natoms, 1, MDI_INT, driver_socket);
@@ -158,15 +158,15 @@ void Driver::command(int narg, char **arg)
       // send the cell dimensions to the driver
       send_cell(error);
     }
-    else if (strcmp(command,">COORD      ") == 0 ) {
+    else if (strcmp(command,">COORDS     ") == 0 ) {
       // receive the coordinate information
       receive_coordinates(error);
     }
-    else if (strcmp(command,"<COORD      ") == 0 ) {
+    else if (strcmp(command,"<COORDS     ") == 0 ) {
       // send the coordinate information
       send_coordinates(error);
     }
-    else if (strcmp(command,"<CHARGE     ") == 0 ) {
+    else if (strcmp(command,"<CHARGES    ") == 0 ) {
       // send the charges
       send_charges(error);
     }
@@ -182,7 +182,7 @@ void Driver::command(int narg, char **arg)
       // receive the forces from the driver
       receive_forces(error);
     }
-    else if (strcmp(command,"+FORCES     ") == 0 ) {
+    else if (strcmp(command,"+PRE-FORCES     ") == 0 ) {
       // receive additional forces from the driver
       // these are added prior to SHAKE or other post-processing
       add_forces(error);
