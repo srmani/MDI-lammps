@@ -150,7 +150,7 @@ void Driver::command(int narg, char **arg)
       // send the atom types
       send_types(error);
     }
-    else if (strcmp(command,"<MASS       ") == 0 ) {
+    else if (strcmp(command,"<MASSES     ") == 0 ) {
       // send the atom types
       send_masses(error);
     }
