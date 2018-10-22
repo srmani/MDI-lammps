@@ -182,7 +182,7 @@ void Driver::command(int narg, char **arg)
       // receive the forces from the driver
       receive_forces(error);
     }
-    else if (strcmp(command,"+PRE-FORCES     ") == 0 ) {
+    else if (strcmp(command,"+PRE-FORCES ") == 0 ) {
       // receive additional forces from the driver
       // these are added prior to SHAKE or other post-processing
       add_forces(error);
