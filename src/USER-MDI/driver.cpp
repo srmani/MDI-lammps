@@ -516,9 +516,9 @@ void Driver::send_cell(Error* error)
   celldata[8] = domain->yz;
 
   if (master) { 
-    ierr = MDI_Recv((char*) celldata, 9, MDI_DOUBLE, driver_socket);
+    ierr = MDI_Send((char*) celldata, 9, MDI_DOUBLE, driver_socket);
     if (ierr != 0)
-      error->all(FLERR,"Unable to receive cell dimensions from driver");
+      error->all(FLERR,"Unable to send cell dimensions to driver");
   }
 }
 
