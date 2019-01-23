@@ -43,7 +43,7 @@ class Driver : protected Pointers {
   void send_cell(Error *);
   void md_init(Error *);
   void timestep(Error *);
-  const char *host; int port; int inet, master, ierr;
+  int inet, master, ierr;
   int driver_socket;
   
   int nat;

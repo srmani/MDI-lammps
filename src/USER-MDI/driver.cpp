@@ -66,8 +66,8 @@ void Driver::command(int narg, char **arg)
     error->all(FLERR,"Driver command requires consecutive atom IDs");
 
   // obtain host information from the command arguments
-  host = strdup(arg[0]);
-  port = force->inumeric(FLERR,arg[1]);
+  const char* mdi_method = strdup(arg[0]);
+  char* mdi_options = strdup(arg[1]);
   const char* mdi_name = strdup(arg[2]);
   inet   = ((narg > 3) && (strcmp(arg[3],"unix") == 0) ) ? 0 : 1;
 
@@ -76,7 +76,7 @@ void Driver::command(int narg, char **arg)
   // open the socket
   int ierr;
   if (master) {
-    driver_socket = MDI_Open(inet, port, host);
+    driver_socket = MDI_Request_Connection(mdi_method,static_cast<void*>(mdi_options),NULL);
     if (driver_socket <= 0)
       error->all(FLERR,"Unable to connect to driver");
   } else driver_socket=0;
