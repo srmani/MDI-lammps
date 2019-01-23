@@ -113,7 +113,7 @@ void Driver::command(int narg, char **arg)
           error->all(FLERR,"Unable to return status to driver");
       }
     }
-    else if (strcmp(command,"<NAME       ") == 0 ) {
+    else if (strcmp(command,"<NAME") == 0 ) {
       // send the calculation name to the driver
       if (master) {
 	ierr = MDI_Send_Command(mdi_name, driver_socket);
@@ -121,7 +121,7 @@ void Driver::command(int narg, char **arg)
           error->all(FLERR,"Unable to send name to driver");
       }
     }
-    else if (strcmp(command,">NATOMS     ") == 0 ) {
+    else if (strcmp(command,">NATOMS") == 0 ) {
       // receive the number of atoms from the driver
       if (master) {
         ierr = MDI_Recv((char*) &atom->natoms, 1, MDI_INT, driver_socket);
@@ -130,7 +130,7 @@ void Driver::command(int narg, char **arg)
       }
       MPI_Bcast(&atom->natoms,1,MPI_INT,0,world);
     }
-    else if (strcmp(command,"<NATOMS     ") == 0 ) {
+    else if (strcmp(command,"<NATOMS") == 0 ) {
       // send the number of atoms to the driver
       if (master) {
         ierr = MDI_Send((char*) &atom->natoms, 1, MDI_INT, driver_socket);
@@ -138,7 +138,7 @@ void Driver::command(int narg, char **arg)
           error->all(FLERR,"Unable to send number of atoms to driver");
       }
     }
-    else if (strcmp(command,"<NTYPES     ") == 0 ) {
+    else if (strcmp(command,"<NTYPES") == 0 ) {
       // send the number of atom types to the driver
       if (master) {
         ierr = MDI_Send((char*) &atom->ntypes, 1, MDI_INT, driver_socket);
@@ -146,56 +146,56 @@ void Driver::command(int narg, char **arg)
           error->all(FLERR,"Unable to send number of atom types to driver");
       }
     }
-    else if (strcmp(command,"<TYPES      ") == 0 ) {
+    else if (strcmp(command,"<TYPES") == 0 ) {
       // send the atom types
       send_types(error);
     }
-    else if (strcmp(command,"<MASSES     ") == 0 ) {
+    else if (strcmp(command,"<MASSES") == 0 ) {
       // send the atom types
       send_masses(error);
     }
-    else if (strcmp(command,"<CELL       ") == 0 ) {
+    else if (strcmp(command,"<CELL") == 0 ) {
       // send the cell dimensions to the driver
       send_cell(error);
     }
-    else if (strcmp(command,">COORDS     ") == 0 ) {
+    else if (strcmp(command,">COORDS") == 0 ) {
       // receive the coordinate information
       receive_coordinates(error);
     }
-    else if (strcmp(command,"<COORDS     ") == 0 ) {
+    else if (strcmp(command,"<COORDS") == 0 ) {
       // send the coordinate information
       send_coordinates(error);
     }
-    else if (strcmp(command,"<CHARGES    ") == 0 ) {
+    else if (strcmp(command,"<CHARGES") == 0 ) {
       // send the charges
       send_charges(error);
     }
-    else if (strcmp(command,"<ENERGY     ") == 0 ) {
+    else if (strcmp(command,"<ENERGY") == 0 ) {
       // send the potential energy to the driver
       send_energy(error);
     }
-    else if (strcmp(command,"<FORCES     ") == 0 ) {
+    else if (strcmp(command,"<FORCES") == 0 ) {
       // send the forces to the driver
       send_forces(error);
     }
-    else if (strcmp(command,">FORCES     ") == 0 ) {
+    else if (strcmp(command,">FORCES") == 0 ) {
       // receive the forces from the driver
       receive_forces(error);
     }
-    else if (strcmp(command,"+PRE-FORCES ") == 0 ) {
+    else if (strcmp(command,"+PRE-FORCES") == 0 ) {
       // receive additional forces from the driver
       // these are added prior to SHAKE or other post-processing
       add_forces(error);
     }
-    else if (strcmp(command,"MD_INIT     ") == 0 ) {
+    else if (strcmp(command,"MD_INIT") == 0 ) {
       // initialize a new MD simulation
       md_init(error);
     }
-    else if (strcmp(command,"TIMESTEP    ") == 0 ) {
+    else if (strcmp(command,"TIMESTEP") == 0 ) {
       // perform an MD timestep
       timestep(error);
     }
-    else if (strcmp(command,"EXIT        ") == 0 ) {
+    else if (strcmp(command,"EXIT") == 0 ) {
       // exit the driver code
       exit_flag = true;
     }
