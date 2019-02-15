@@ -53,13 +53,13 @@
 
   INTERFACE
 
-     FUNCTION MDI_Listen_(method, options, world_comm) bind(c, name="MDI_Listen")
+     FUNCTION MDI_Init_(options, data, world_comm) bind(c, name="MDI_Init")
        USE, INTRINSIC :: iso_c_binding
-       CHARACTER(C_CHAR)                        :: method(*)
-       TYPE(C_PTR), VALUE                       :: options
-       TYPE(C_PTR), VALUE                       :: world_comm
-       INTEGER(KIND=C_INT)                      :: MDI_Listen_
-     END FUNCTION MDI_Listen_
+       CHARACTER(C_CHAR)                        :: options(*)
+       TYPE(C_PTR), VALUE                       :: data
+       INTEGER(KIND=C_INT)                      :: world_comm
+       INTEGER(KIND=C_INT)                      :: MDI_Init_
+     END FUNCTION MDI_Init_
 
      FUNCTION MDI_Request_Connection_(method, options, world_comm) BIND(C, name="MDI_Request_Connection")
        USE ISO_C_BINDING
@@ -114,17 +114,18 @@
 
   CONTAINS
 
-    SUBROUTINE MDI_Listen(fmethod, options, fworld_comm, ierr)
+    SUBROUTINE MDI_Init(foptions, data, fworld_comm, ierr)
       IMPLICIT NONE
-      CHARACTER(LEN=*), INTENT(IN) :: fmethod
-      TYPE(C_PTR), INTENT(IN) :: options
-      INTEGER, INTENT(IN) :: fworld_comm
+      CHARACTER(LEN=*), INTENT(IN) :: foptions
+      TYPE(C_PTR), INTENT(IN) :: data
+      INTEGER, INTENT(INOUT) :: fworld_comm
       INTEGER, INTENT(OUT) :: ierr
-      INTEGER, TARGET :: cworld_comm
+      !INTEGER, TARGET :: cworld_comm
 
-      cworld_comm = fworld_comm
-      ierr = MDI_Listen_( TRIM(fmethod)//c_null_char, options, c_loc(cworld_comm) )
-    END SUBROUTINE MDI_Listen
+      !cworld_comm = fworld_comm
+      !ierr = MDI_Init_( TRIM(foptions)//c_null_char, data, c_loc(cworld_comm) )
+      ierr = MDI_Init_( TRIM(foptions)//c_null_char, data, fworld_comm )
+    END SUBROUTINE MDI_Init
 
     SUBROUTINE MDI_Request_Connection(fmethod, foptions, fworld_comm, comm)
       IMPLICIT NONE
