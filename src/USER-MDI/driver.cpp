@@ -31,9 +31,9 @@
 #include "irregular.h"
 #include "verlet.h"
 #include "fix_driver.h"
-extern "C" {
+//extern "C" {
 #include "mdi.h"
-}
+//}
 
 using namespace LAMMPS_NS;
 
@@ -76,7 +76,8 @@ void Driver::command(int narg, char **arg)
   // open the socket
   int ierr;
   if (master) {
-    driver_socket = MDI_Request_Connection(mdi_method,static_cast<void*>(mdi_options),NULL);
+    //driver_socket = MDI_Request_Connection(mdi_method,static_cast<void*>(mdi_options),NULL);
+    driver_socket = MDI_Accept_Connection();
     if (driver_socket <= 0)
       error->all(FLERR,"Unable to connect to driver");
   } else driver_socket=0;
