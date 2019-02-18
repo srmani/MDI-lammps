@@ -65,17 +65,6 @@ static void print_style(FILE *fp, const char *str, int &pos);
 
 LAMMPS::LAMMPS(int narg, char **arg, MPI_Comm communicator)
 {
-  memory = new Memory(this);
-  error = new Error(this);
-  universe = new Universe(this,communicator);
-  output = NULL;
-  python = NULL;
-
-  screen = NULL;
-  logfile = NULL;
-  infile = NULL;
-
-  initclock = MPI_Wtime();
 
   // parse mdi command
   int iarg = 1;
@@ -87,6 +76,18 @@ LAMMPS::LAMMPS(int narg, char **arg, MPI_Comm communicator)
       error->universe_all(FLERR,"Unable to initialize MDI");
     iarg += 2;
   }
+
+  memory = new Memory(this);
+  error = new Error(this);
+  universe = new Universe(this,communicator);
+  output = NULL;
+  python = NULL;
+
+  screen = NULL;
+  logfile = NULL;
+  infile = NULL;
+
+  initclock = MPI_Wtime();
 
   // parse input switches
 
