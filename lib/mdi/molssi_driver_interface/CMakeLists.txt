@@ -21,6 +21,12 @@ endif()
 
 #construct the list of source files
 list(APPEND sources "mdi.cpp")
+list(APPEND sources "communicator.h")
+list(APPEND sources "communicator.cpp")
+list(APPEND sources "mdi_manager.h")
+list(APPEND sources "mdi_manager.cpp")
+list(APPEND sources "method.h")
+list(APPEND sources "method.cpp")
 if( mpi STREQUAL "OFF" )
    list(APPEND sources "${CMAKE_CURRENT_SOURCE_DIR}/STUBS_MPI/mpi.h")
 endif()
@@ -57,10 +63,10 @@ if( (NOT language) OR (language STREQUAL "Python") )
       endif()
    endif()
 
-   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/mdi_python.py ${CMAKE_CURRENT_BINARY_DIR}/mdi_python.py COPYONLY)
+   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/mdi.py ${CMAKE_CURRENT_BINARY_DIR}/mdi.py COPYONLY)
    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/__init__.py ${CMAKE_CURRENT_BINARY_DIR}/__init__.py COPYONLY)
 
-   # Write the name of the mdi library, for use by mdi_python.py
+   # Write the name of the mdi library, for use by mdi.py
    file(GENERATE
       OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/mdi_name
       CONTENT $<TARGET_FILE_NAME:mdi>
