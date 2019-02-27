@@ -76,8 +76,7 @@ void Driver::command(int narg, char **arg)
   // open the socket
   int ierr;
   if (master) {
-    //driver_socket = MDI_Request_Connection(mdi_method,static_cast<void*>(mdi_options),NULL);
-    driver_socket = MDI_Accept_Connection();
+    driver_socket = MDI_Accept_Communicator();
     if (driver_socket <= 0)
       error->all(FLERR,"Unable to connect to driver");
   } else driver_socket=0;

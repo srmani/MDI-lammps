@@ -72,7 +72,7 @@ LAMMPS::LAMMPS(int narg, char **arg, MPI_Comm communicator)
   if (narg-iarg >= 2 && (strcmp(arg[iarg],"-mdi") == 0 ||
 			 strcmp(arg[iarg],"-m") == 0)) {
     printf("Parsing: %s\n",arg[iarg+1]);
-    if ( MDI_Init(arg[iarg+1], NULL, &communicator) != 0)
+    if ( MDI_Init(arg[iarg+1], &communicator) != 0)
       error->universe_all(FLERR,"Unable to initialize MDI");
     iarg += 2;
   }
