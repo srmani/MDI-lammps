@@ -49,7 +49,9 @@
 #include "memory.h"
 #include "version.h"
 #include "error.h"
+extern "C" {
 #include "mdi.h"
+}
 
 using namespace LAMMPS_NS;
 

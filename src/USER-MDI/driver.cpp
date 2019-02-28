@@ -31,9 +31,9 @@
 #include "irregular.h"
 #include "verlet.h"
 #include "fix_driver.h"
-//extern "C" {
+extern "C" {
 #include "mdi.h"
-//}
+}
 
 using namespace LAMMPS_NS;
 
