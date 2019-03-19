@@ -191,7 +191,7 @@ void Driver::command(int narg, char **arg)
       // initialize a new MD simulation
       md_init(error);
     }
-    else if (strcmp(command,"TIMESTEP") == 0 ) {
+    else if (strcmp(command,"ATOM_STEP") == 0 ) {
       // perform an MD timestep
       timestep(error);
     }
