@@ -19,8 +19,8 @@ EXTRAMAKE = Makefile.lammps.empty
 lib: 	$(OBJ)
 	mkdir build
 	cd build; cmake -Dlibtype=STATIC -Dlanguage=C -D CMAKE_C_COMPILER=g++ -D CMAKE_C_COMPILER=g++ ..; make
-	cp build/molssi_driver_interface/libmdi.a .
-	cp molssi_driver_interface/mdi.h .
+	cp build/MDI_Library/libmdi.a .
+	cp MDI_Library/mdi.h .
 	@cp $(EXTRAMAKE) Makefile.lammps
 
 # ------ CLEAN ------
