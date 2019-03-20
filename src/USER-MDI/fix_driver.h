@@ -18,8 +18,8 @@ FixStyle(mdi,FixMDI)
 
 #else
 
-#ifndef LMP_FIX_DRIVER_H
-#define LMP_FIX_DRIVER_H
+#ifndef LMP_FIX_MDI_H
+#define LMP_FIX_MDI_H
 
 #include "fix.h"
 
@@ -59,7 +59,7 @@ E: Illegal ... command
 
 Self-explanatory.
 
-E: Potential energy ID for fix driver does not exist
+E: Potential energy ID for fix mdi does not exist
 
 Self-explanatory.
 

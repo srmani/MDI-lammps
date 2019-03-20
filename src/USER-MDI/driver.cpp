@@ -39,31 +39,31 @@ using namespace LAMMPS_NS;
 
 /* ---------------------------------------------------------------------- */
 
-Driver::Driver(LAMMPS *lmp) : Pointers(lmp) {
+CommandMDI::CommandMDI(LAMMPS *lmp) : Pointers(lmp) {
   md_initialized = false;
 
   // create instance of Irregular class
   irregular = new Irregular(lmp);
 }
 
-Driver::~Driver() {
+CommandMDI::~CommandMDI() {
   delete irregular;
 }
 
 /* ---------------------------------------------------------------------- */
 
-void Driver::command(int narg, char **arg)
+void CommandMDI::command(int narg, char **arg)
 {
-  /* format for driver command:
-   * driver
+  /* format for MDI command:
+   * mdi
    */
-  if (narg > 0) error->all(FLERR,"Illegal driver command");
+  if (narg > 0) error->all(FLERR,"Illegal MDI command");
 
   if (atom->tag_enable == 0)
-    error->all(FLERR,"Cannot use driver command without atom IDs");
+    error->all(FLERR,"Cannot use MDI command without atom IDs");
 
   if (atom->tag_consecutive() == 0)
-    error->all(FLERR,"Driver command requires consecutive atom IDs");
+    error->all(FLERR,"MDI command requires consecutive atom IDs");
 
   master = (comm->me==0) ? 1 : 0;
 
@@ -195,7 +195,7 @@ void Driver::command(int narg, char **arg)
 }
 
 
-void Driver::receive_coordinates(Error* error)
+void CommandMDI::receive_coordinates(Error* error)
 {
   double posconv;
   posconv=force->angstrom/MDI_ANGSTROM_TO_BOHR;
@@ -239,7 +239,7 @@ void Driver::receive_coordinates(Error* error)
 }
 
 
-void Driver::send_coordinates(Error* error)
+void CommandMDI::send_coordinates(Error* error)
 {
   double posconv;
   posconv=force->angstrom/MDI_ANGSTROM_TO_BOHR;
@@ -273,7 +273,7 @@ void Driver::send_coordinates(Error* error)
 }
 
 
-void Driver::send_charges(Error* error)
+void CommandMDI::send_charges(Error* error)
 {
   double *charges;
   double *charges_reduced;
@@ -302,7 +302,7 @@ void Driver::send_charges(Error* error)
 }
 
 
-void Driver::send_energy(Error* error)
+void CommandMDI::send_energy(Error* error)
 {
 
   double pe;
@@ -332,7 +332,7 @@ void Driver::send_energy(Error* error)
 }
 
 
-void Driver::send_types(Error* error)
+void CommandMDI::send_types(Error* error)
 {
   int * const type = atom->type;
 
@@ -344,7 +344,7 @@ void Driver::send_types(Error* error)
 }
 
 
-void Driver::send_masses(Error* error)
+void CommandMDI::send_masses(Error* error)
 {
   double * const mass = atom->mass;
 
@@ -356,7 +356,7 @@ void Driver::send_masses(Error* error)
 }
 
 
-void Driver::send_forces(Error* error)
+void CommandMDI::send_forces(Error* error)
 {
   double potconv, posconv, forceconv;
   potconv=MDI_KELVIN_TO_HARTREE/force->boltz;
@@ -421,7 +421,7 @@ void Driver::send_forces(Error* error)
 }
 
 
-void Driver::receive_forces(Error* error)
+void CommandMDI::receive_forces(Error* error)
 {
   double potconv, posconv, forceconv;
   potconv=MDI_KELVIN_TO_HARTREE/force->boltz;
@@ -453,7 +453,7 @@ void Driver::receive_forces(Error* error)
 }
 
 
-void Driver::add_forces(Error* error)
+void CommandMDI::add_forces(Error* error)
 {
   double potconv, posconv, forceconv;
   potconv=MDI_KELVIN_TO_HARTREE/force->boltz;
@@ -487,7 +487,7 @@ void Driver::add_forces(Error* error)
 }
 
 
-void Driver::send_cell(Error* error)
+void CommandMDI::send_cell(Error* error)
 {
   double celldata[9];
 
@@ -509,7 +509,7 @@ void Driver::send_cell(Error* error)
 }
 
 
-void Driver::md_init(Error* error)
+void CommandMDI::md_init(Error* error)
 {
   // calculate the forces
   update->whichflag = 1; // 1 for dynamics
@@ -527,7 +527,7 @@ void Driver::md_init(Error* error)
 }
 
 
-void Driver::timestep(Error* error)
+void CommandMDI::timestep(Error* error)
 {
   // calculate the forces
   update->whichflag = 1; // 1 for dynamics

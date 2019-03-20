@@ -13,21 +13,21 @@
 
 #ifdef COMMAND_CLASS
 
-CommandStyle(driver,Driver)
+CommandStyle(mdi,CommandMDI)
 
 #else
 
-#ifndef LMP_DRIVER_H
-#define LMP_DRIVER_H
+#ifndef LMP_COMMAND_MDI_H
+#define LMP_COMMAND_MDI_H
 
 #include "pointers.h"
 
 namespace LAMMPS_NS {
 
-class Driver : protected Pointers {
+class CommandMDI : protected Pointers {
  public:
-  Driver(class LAMMPS *);
-  virtual ~Driver();
+  CommandMDI(class LAMMPS *);
+  virtual ~CommandMDI();
   void command(int, char **);
 
  protected:
@@ -66,19 +66,17 @@ Self-explanatory.  Check the input script syntax and compare to the
 documentation for the command.  You can use -echo screen as a
 command-line option when running LAMMPS to see the offending line.
 
-E: Cannot use driver command without atom IDs
+E: Cannot use MDI command without atom IDs
 
 Self-explanatory.
 
-E: Driver command requires consecutive atom IDs
+E: MDI command requires consecutive atom IDs
 
 Self-explanatory.
 
 E: Unable to connect to driver
 
-Self-explanatory.  Check to confirm that the port number used in 
-the LAMMPS driver command is the same as the port number used by
-the driver.
+Self-explanatory.
 
 E: Unable to ... driver
 
