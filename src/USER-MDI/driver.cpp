@@ -55,21 +55,15 @@ Driver::~Driver() {
 void Driver::command(int narg, char **arg)
 {
   /* format for driver command:
-   * driver hostname port mdi_name [unix]
+   * driver
    */
-  if (narg < 3) error->all(FLERR,"Illegal driver command");
+  if (narg > 0) error->all(FLERR,"Illegal driver command");
 
   if (atom->tag_enable == 0)
     error->all(FLERR,"Cannot use driver command without atom IDs");
 
   if (atom->tag_consecutive() == 0)
     error->all(FLERR,"Driver command requires consecutive atom IDs");
-
-  // obtain host information from the command arguments
-  const char* mdi_method = strdup(arg[0]);
-  char* mdi_options = strdup(arg[1]);
-  const char* mdi_name = strdup(arg[2]);
-  inet   = ((narg > 3) && (strcmp(arg[3],"unix") == 0) ) ? 0 : 1;
 
   master = (comm->me==0) ? 1 : 0;
 
@@ -111,14 +105,6 @@ void Driver::command(int narg, char **arg)
 	ierr = MDI_Send_Command("READY", driver_socket);
         if (ierr != 0)
           error->all(FLERR,"Unable to return status to driver");
-      }
-    }
-    else if (strcmp(command,"<NAME") == 0 ) {
-      // send the calculation name to the driver
-      if (master) {
-	ierr = MDI_Send_Command(mdi_name, driver_socket);
-        if (ierr != 0)
-          error->all(FLERR,"Unable to send name to driver");
       }
     }
     else if (strcmp(command,">NATOMS") == 0 ) {
@@ -329,8 +315,8 @@ void Driver::send_energy(Error* error)
 
   // identify the driver fix
   for (int i = 0; i < modify->nfix; i++) {
-    if (strcmp(modify->fix[i]->style,"driver") == 0) {
-      FixDriver *fixd = static_cast<FixDriver*>(modify->fix[i]);
+    if (strcmp(modify->fix[i]->style,"mdi") == 0) {
+      FixMDI *fixd = static_cast<FixMDI*>(modify->fix[i]);
       pe = fixd->potential_energy;
     }
   }
@@ -489,8 +475,8 @@ void Driver::add_forces(Error* error)
 
   //identify the driver fix
   for (int i = 0; i < modify->nfix; i++) {
-    if (strcmp(modify->fix[i]->style,"driver") == 0) {
-      FixDriver *fixd = static_cast<FixDriver*>(modify->fix[i]);
+    if (strcmp(modify->fix[i]->style,"mdi") == 0) {
+      FixMDI *fixd = static_cast<FixMDI*>(modify->fix[i]);
       for (int j = 0; j < 3*atom->natoms; j++) {
 	fixd->add_force[j] = forces[j];
       }

@@ -41,16 +41,16 @@ using namespace FixConst;
  * create class and parse arguments in LAMMPS script. Syntax:
  * fix ID group-ID driver [couple <group-ID>]
  ***************************************************************/
-FixDriver::FixDriver(LAMMPS *lmp, int narg, char **arg) :
+FixMDI::FixMDI(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg),
   id_pe(NULL), pe(NULL)
 {
 
   if (narg > 3)
-    error->all(FLERR,"Illegal fix driver command");
+    error->all(FLERR,"Illegal fix mdi command");
 
   // allocate arrays
-  memory->create(add_force,3*atom->natoms,"driver:add_force");
+  memory->create(add_force,3*atom->natoms,"mdi:add_force");
   for (int i=0; i< 3*atom->natoms; i++) {
     add_force[i] = 0.0;
   }
@@ -75,14 +75,14 @@ FixDriver::FixDriver(LAMMPS *lmp, int narg, char **arg) :
 /*********************************
  * Clean up on deleting the fix. *
  *********************************/
-FixDriver::~FixDriver()
+FixMDI::~FixMDI()
 {
   modify->delete_compute(id_pe);
   delete [] id_pe;
 }
 
 /* ---------------------------------------------------------------------- */
-int FixDriver::setmask()
+int FixMDI::setmask()
 {
   int mask = 0;
   mask |= POST_INTEGRATE;
@@ -92,7 +92,7 @@ int FixDriver::setmask()
 
 /* ---------------------------------------------------------------------- */
 
-void FixDriver::exchange_forces()
+void FixMDI::exchange_forces()
 {
   double **f = atom->f;
   const int * const mask  = atom->mask;
@@ -111,12 +111,12 @@ void FixDriver::exchange_forces()
 
 /* ---------------------------------------------------------------------- */
 
-void FixDriver::init()
+void FixMDI::init()
 {
 
   int icompute = modify->find_compute(id_pe);
   if (icompute < 0)
-    error->all(FLERR,"Potential energy ID for fix driver does not exist");
+    error->all(FLERR,"Potential energy ID for fix mdi does not exist");
   pe = modify->compute[icompute];
 
   return;
@@ -125,7 +125,7 @@ void FixDriver::init()
 
 /* ---------------------------------------------------------------------- */
 
-void FixDriver::setup(int)
+void FixMDI::setup(int)
 {
   exchange_forces();
 
@@ -138,7 +138,7 @@ void FixDriver::setup(int)
 
 /* ---------------------------------------------------------------------- */
 
-void FixDriver::post_force(int vflag)
+void FixMDI::post_force(int vflag)
 {
   // calculate the energy
   potential_energy = pe->compute_scalar();

@@ -14,7 +14,7 @@
 
 #ifdef FIX_CLASS
 
-FixStyle(driver,FixDriver)
+FixStyle(mdi,FixMDI)
 
 #else
 
@@ -25,10 +25,10 @@ FixStyle(driver,FixDriver)
 
 namespace LAMMPS_NS {
 
-class FixDriver : public Fix {
+class FixMDI : public Fix {
  public:
-  FixDriver(class LAMMPS *, int, char **);
-  ~FixDriver();
+  FixMDI(class LAMMPS *, int, char **);
+  ~FixMDI();
   int setmask();
   void init();
 
