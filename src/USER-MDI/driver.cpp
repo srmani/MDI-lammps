@@ -23,6 +23,8 @@
 #include "domain.h"
 #include "update.h"
 #include "force.h"
+#include "min.h"
+#include "minimize.h"
 #include "modify.h"
 #include "output.h"
 #include "timer.h"
@@ -41,6 +43,7 @@ using namespace LAMMPS_NS;
 
 CommandMDI::CommandMDI(LAMMPS *lmp) : Pointers(lmp) {
   md_initialized = false;
+  most_recent_init = 0;
 
   // create instance of Irregular class
   irregular = new Irregular(lmp);
@@ -177,8 +180,12 @@ void CommandMDI::command(int narg, char **arg)
       // initialize a new MD simulation
       md_init(error);
     }
+    else if (strcmp(command,"OPTG_INIT") == 0 ) {
+      // initialize a new geometry optimization
+      optg_init(error);
+    }
     else if (strcmp(command,"ATOM_STEP") == 0 ) {
-      // perform an MD timestep
+      // perform an single iteration of MD or geometry optimization
       timestep(error);
     }
     else if (strcmp(command,"EXIT") == 0 ) {
@@ -309,9 +316,11 @@ void CommandMDI::send_energy(Error* error)
   double *potential_energy = &pe;
 
   // be certain that the MD simulation has been initialized
+  /*
   if ( not md_initialized ) {
-    md_init(error);
+    error->all(FLERR,"Unable to compute energy");
   }
+  */
 
   // identify the driver fix
   for (int i = 0; i < modify->nfix; i++) {
@@ -524,19 +533,48 @@ void CommandMDI::md_init(Error* error)
   update->integrate->setup(1);
 
   md_initialized = true;
+
+  most_recent_init = 1;
 }
 
 
 void CommandMDI::timestep(Error* error)
 {
-  // calculate the forces
-  update->whichflag = 1; // 1 for dynamics
-  timer->init_timeout();
-  update->nsteps += 1;
-  update->laststep += 1;
-  update->endstep = update->laststep;
-  output->next = update->ntimestep + 1;
+  if ( most_recent_init == 1 ) {
+    // calculate the forces
+    update->whichflag = 1; // 1 for dynamics
+    timer->init_timeout();
+    update->nsteps += 1;
+    update->laststep += 1;
+    update->endstep = update->laststep;
+    output->next = update->ntimestep + 1;
 
-  update->integrate->run(1);
+    update->integrate->run(1);
+  }
+  else if ( most_recent_init == 2 ) {
+    update->minimize->iterate(1);
+  }
+}
 
+
+void CommandMDI::optg_init(Error* error)
+{
+  // create instance of Minimizer class
+  minimizer = new Minimize(lmp);
+
+  int narg = 4;
+  char* arg[] = {"1.0e-100","1.0e-100","10000000","10000000"};
+
+  update->etol = force->numeric(FLERR,arg[0]);
+  update->ftol = force->numeric(FLERR,arg[1]);
+  update->nsteps = force->inumeric(FLERR,arg[2]);
+  update->max_eval = force->inumeric(FLERR,arg[3]);
+
+  update->whichflag = 2; // 2 for minimization
+  update->beginstep = update->firststep = update->ntimestep;
+  update->endstep = update->laststep = update->firststep + update->nsteps;
+  lmp->init();
+  update->minimize->setup();
+
+  most_recent_init = 2;
 }

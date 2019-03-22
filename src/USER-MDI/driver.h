@@ -43,6 +43,7 @@ class CommandMDI : protected Pointers {
   void send_cell(Error *);
   void md_init(Error *);
   void timestep(Error *);
+  void optg_init(Error *);
   int inet, master, ierr;
   int driver_socket;
   
@@ -51,6 +52,11 @@ class CommandMDI : protected Pointers {
 
 private:
   class Irregular *irregular;
+  class Minimize *minimizer;
+  int most_recent_init; // which MDI init command was most recently received?
+                        // 0 - none
+                        // 1 - MD
+                        // 2 - OPTG
 };
 
 }
