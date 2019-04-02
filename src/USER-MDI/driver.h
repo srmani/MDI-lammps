@@ -53,10 +53,12 @@ class CommandMDI : protected Pointers {
 private:
   class Irregular *irregular;
   class Minimize *minimizer;
+  class FixMDI *mdi_fix;
   int most_recent_init; // which MDI init command was most recently received?
                         // 0 - none
                         // 1 - MD
                         // 2 - OPTG
+
 };
 
 }

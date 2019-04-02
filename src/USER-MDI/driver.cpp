@@ -36,6 +36,10 @@
 extern "C" {
 #include "mdi.h"
 }
+//
+#include <iostream>
+using namespace std;
+//
 
 using namespace LAMMPS_NS;
 
@@ -57,6 +61,14 @@ CommandMDI::~CommandMDI() {
 
 void CommandMDI::command(int narg, char **arg)
 {
+
+  // identify the driver fix
+  for (int i = 0; i < modify->nfix; i++) {
+    if (strcmp(modify->fix[i]->style,"mdi") == 0) {
+      mdi_fix = static_cast<FixMDI*>(modify->fix[i]);
+    }
+  }
+
   /* format for MDI command:
    * mdi
    */
@@ -67,6 +79,11 @@ void CommandMDI::command(int narg, char **arg)
 
   if (atom->tag_consecutive() == 0)
     error->all(FLERR,"MDI command requires consecutive atom IDs");
+
+  //////////////
+  mdi_fix->engine_mode(0);
+  return;
+  //////////////
 
   master = (comm->me==0) ? 1 : 0;
 
@@ -322,13 +339,7 @@ void CommandMDI::send_energy(Error* error)
   }
   */
 
-  // identify the driver fix
-  for (int i = 0; i < modify->nfix; i++) {
-    if (strcmp(modify->fix[i]->style,"mdi") == 0) {
-      FixMDI *fixd = static_cast<FixMDI*>(modify->fix[i]);
-      pe = fixd->potential_energy;
-    }
-  }
+  pe = mdi_fix->potential_energy;
 
   // convert the energy to atomic units
   pe *= MDI_KELVIN_TO_HARTREE/force->boltz;
@@ -379,6 +390,11 @@ void CommandMDI::send_forces(Error* error)
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
 
+  //
+  double **ftest = atom->f;
+  cout << "$$$ Forces at start of send_forces: " << ftest[0][0] << endl;
+  //
+
   forces = new double[3*atom->natoms];
   forces_reduced = new double[3*atom->natoms];
   x_buf = new double[3*atom->natoms];
@@ -394,7 +410,7 @@ void CommandMDI::send_forces(Error* error)
 
 
   // calculate the forces
-  update->whichflag = 1; // 0 for forces
+  update->whichflag = 1; // 1 for dynamics
   update->nsteps = 1;
   lmp->init();
   update->integrate->setup_minimal(1);
@@ -414,6 +430,11 @@ void CommandMDI::send_forces(Error* error)
     if (ierr != 0)
       error->all(FLERR,"Unable to send atom forces to driver");
   }
+
+  //
+  cout << "$$$ Forces at end of send_forces: " << f[0][0] << endl;
+  //
+
 
   //restore the original set of coordinates
   double **x_new = atom->x;
@@ -482,14 +503,8 @@ void CommandMDI::add_forces(Error* error)
     forces[i] /= forceconv;
   }
 
-  //identify the driver fix
-  for (int i = 0; i < modify->nfix; i++) {
-    if (strcmp(modify->fix[i]->style,"mdi") == 0) {
-      FixMDI *fixd = static_cast<FixMDI*>(modify->fix[i]);
-      for (int j = 0; j < 3*atom->natoms; j++) {
-	fixd->add_force[j] = forces[j];
-      }
-    }
+  for (int j = 0; j < 3*atom->natoms; j++) {
+    mdi_fix->add_force[j] = forces[j];
   }
 
   delete [] forces;
@@ -535,6 +550,10 @@ void CommandMDI::md_init(Error* error)
   md_initialized = true;
 
   most_recent_init = 1;
+  //
+  double **f = atom->f;
+  cout << "$$$ Forces at end of md_init: " << f[0][0] << endl;
+  //
 }
 
 

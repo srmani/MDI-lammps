@@ -32,9 +32,12 @@ class FixMDI : public Fix {
   int setmask();
   void init();
 
+  void engine_mode(int node);
+
   // receive and update forces
   void setup(int);
   void post_force(int);
+  void end_of_step();
 
   double *add_force; // stores forces added using +FORCE command
   double potential_energy; // stores potential energy
@@ -43,8 +46,41 @@ class FixMDI : public Fix {
   void exchange_forces();
 
  private:
+  int master, ierr;
+  int driver_socket;
+  int most_recent_init; // which MDI init command was most recently received?
+                        // 0 - none
+                        // 1 - MD
+                        // 2 - OPTG
+  bool exit_flag;
+  int current_node;
+  int target_node;      // is the code supposed to advance to a particular node?
+                        // 0 - none
+                        // 1 - before pre-force calculation
+                        // 2 - before final force calculation
+                        // 3 - before time integration
+                        // 4 - after MD_INIT command
+
+  // command to be executed at the target node
+  char *target_command;
+
   char *id_pe;
+  class Irregular *irregular;
+  class Minimize *minimizer;
   class Compute *pe;
+  void send_types(Error *);
+  void send_masses(Error *);
+  void receive_coordinates(Error *);
+  void send_coordinates(Error *);
+  void send_charges(Error *);
+  void send_energy(Error *);
+  void send_forces(Error *);
+  void add_forces(Error *);
+  void receive_forces(Error *);
+  void send_cell(Error *);
+  void md_init(Error *);
+  void timestep(Error *);
+  void optg_init(Error *);
 
 };
 
