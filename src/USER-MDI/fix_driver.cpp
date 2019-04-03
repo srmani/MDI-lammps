@@ -162,7 +162,7 @@ void FixMDI::init()
 
 void FixMDI::setup(int)
 {
-  exchange_forces();
+  //exchange_forces();
 
   //compute the potential energy
   potential_energy = pe->compute_scalar();
@@ -189,7 +189,8 @@ void FixMDI::post_force(int vflag)
   // calculate the energy
   potential_energy = pe->compute_scalar();
 
-  exchange_forces();
+  //exchange_forces();
+  engine_mode(2);
 
   // trigger potential energy computation on next timestep
   pe->addstep(update->ntimestep+1);
@@ -341,11 +342,32 @@ void FixMDI::engine_mode(int node)
     }
     else if (strcmp(command,"ATOM_STEP") == 0 ) {
       // perform an single iteration of MD or geometry optimization
+      if ( current_node == 4 ) {
+	// for the first iteration, md_setup calculates the forces
+	md_setup(error);
+      }
       timestep(error);
+    }
+    else if (strcmp(command,"@PRE-FORCES") == 0 ) {
+      if ( current_node == 4 ) {
+	// for the first iteration, md_setup calculates the forces
+	md_setup(error);
+	current_node = 5; // special case:
+                          // tells @FORCES command not to move forward
+      }
+      else {
+	target_node = 2;
+	local_exit_flag = true;
+      }
     }
     else if (strcmp(command,"@FORCES") == 0 ) {
       if ( current_node == 4 ) {
-	//TEMPORARY: REPLACE WITH A DELAY TO THE MD_INIT FORCE CALCULATION
+	// for the first iteration, md_setup calculates the forces
+	md_setup(error);
+	current_node = 3;
+      }
+      else if ( current_node == 5 ) {
+	// for the special case when MD_INIT is followed by @PREFORCES, which is followed by @FORCES
 	current_node = 3;
       }
       else {
@@ -705,17 +727,23 @@ void FixMDI::md_init(Error* error)
   update->beginstep = update->firststep;
   update->endstep = update->laststep;
   lmp->init();
+  ///////////
+  current_node = 4; // after MD_INIT
+  most_recent_init = 1;
+  ///////////
+
+  update->integrate->setup(1);
+}
+
+
+void FixMDI::md_setup(Error* error)
+{
   update->integrate->setup(1);
 
-  most_recent_init = 1;
   //
   double **f = atom->f;
   cout << "$$$ Forces at end of md_init: " << f[0][0] << endl;
   //
-
-  ///////////
-  current_node = 4; // after MD_INIT
-  ///////////
 }
 
 
