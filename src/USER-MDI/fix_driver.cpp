@@ -79,6 +79,7 @@ FixMDI::FixMDI(LAMMPS *lmp, int narg, char **arg) :
 
   most_recent_init = 0;
   exit_flag = false;
+  local_exit_flag = false;
   target_command = new char[MDI_COMMAND_LENGTH+1];
 
   int n = strlen(id) + 4;
@@ -172,6 +173,15 @@ void FixMDI::setup(int)
 
 /* ---------------------------------------------------------------------- */
 
+void FixMDI::post_integrate()
+{
+  cout << "@@@ In post_integrate" << endl;
+
+  engine_mode(1);
+}
+
+/* ---------------------------------------------------------------------- */
+
 void FixMDI::post_force(int vflag)
 {
   cout << "@@@ In post_force" << endl;
@@ -190,9 +200,14 @@ void FixMDI::post_force(int vflag)
 void FixMDI::end_of_step()
 {
   cout << "$$$$ end_of_step" << endl;
-  engine_mode(3);
-  if ( most_recent_init == 1 ) {
-    current_node = 4;
+  if ( most_recent_init == 1 ) { // md
+    // when running md, the simulation only runs for a single iteration
+    // after the iteration terminates, control will return to engine mode
+    // set current_node so that engine_mode is using the correct node
+    current_node = 3;
+  }
+  else if ( most_recent_init == 2 ) { // optg
+    engine_mode(3);
   }
 }
 
@@ -214,7 +229,6 @@ void FixMDI::engine_mode(int node)
 
   // flag to indicate whether the engine should continue listening for commands at this node
   current_node = node;
-  bool local_exit_flag = false;
   if ( target_node != 0 and target_node != current_node ) {
     local_exit_flag = true;
   }
@@ -329,6 +343,16 @@ void FixMDI::engine_mode(int node)
       // perform an single iteration of MD or geometry optimization
       timestep(error);
     }
+    else if (strcmp(command,"@FORCES") == 0 ) {
+      if ( current_node == 4 ) {
+	//TEMPORARY: REPLACE WITH A DELAY TO THE MD_INIT FORCE CALCULATION
+	current_node = 3;
+      }
+      else {
+	target_node = 3;
+	local_exit_flag = true;
+      }
+    }
     else if (strcmp(command,"EXIT") == 0 ) {
       // exit the driver code
       exit_flag = true;
@@ -338,11 +362,15 @@ void FixMDI::engine_mode(int node)
       error->all(FLERR,"Unknown command from driver");
     }
 
+    // check if the target node is something other than the current node
     if ( target_node != 0 and target_node != current_node ) {
       local_exit_flag = true;
     }
 
   }
+
+  // a local exit has completed, so turn off the local exit flag
+  local_exit_flag = false;
 
 }
 
@@ -687,47 +715,32 @@ void FixMDI::md_init(Error* error)
 
   ///////////
   current_node = 4; // after MD_INIT
-  //update->integrate->run(10);
   ///////////
 }
 
 
 void FixMDI::timestep(Error* error)
 {
-  //strcpy(id_pe,id);
   if ( most_recent_init == 1 ) {
     cout << "$$$ ATOM_STEP: " << current_node << " " << target_node << endl;
-    if ( current_node != 4 ) { return; }
+    if ( current_node == 4 or current_node == 3 ) {
 
-    /////////////
-    update->whichflag = 1; // 1 for dynamics
-    timer->init_timeout();
-    update->nsteps += 1;
-    update->laststep += 1;
-    update->endstep = update->laststep;
-    output->next = update->ntimestep + 1;
+      update->whichflag = 1; // 1 for dynamics
+      timer->init_timeout();
+      update->nsteps += 1;
+      update->laststep += 1;
+      update->endstep = update->laststep;
+      output->next = update->ntimestep + 1;
 
-    //target_node = 3;
-    target_node = 4;
-    if ( current_node == 4 ) { // this is the first timestep
+      target_node = 1;
       update->integrate->run(1);
+
     }
     else {
-      current_node = 0;
+      target_node = 1;
+      local_exit_flag = true;
     }
 
-    /*
-    // calculate the forces
-    update->whichflag = 1; // 1 for dynamics
-    timer->init_timeout();
-    update->nsteps += 1;
-    update->laststep += 1;
-    update->endstep = update->laststep;
-    output->next = update->ntimestep + 1;
-
-    update->integrate->run(1);
-    */
-    /////////////
   }
   else if ( most_recent_init == 2 ) {
     update->minimize->iterate(1);

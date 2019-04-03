@@ -36,6 +36,7 @@ class FixMDI : public Fix {
 
   // receive and update forces
   void setup(int);
+  void post_integrate();
   void post_force(int);
   void end_of_step();
 
@@ -53,12 +54,13 @@ class FixMDI : public Fix {
                         // 1 - MD
                         // 2 - OPTG
   bool exit_flag;
+  bool local_exit_flag;
   int current_node;
   int target_node;      // is the code supposed to advance to a particular node?
                         // 0 - none
-                        // 1 - before pre-force calculation
-                        // 2 - before final force calculation
-                        // 3 - before time integration
+                        // 1 - @COORDS (before pre-force calculation)
+                        // 2 - @PREFORCES (before final force calculation)
+                        // 3 - @FORCES (before time integration)
                         // 4 - after MD_INIT command
 
   // command to be executed at the target node
