@@ -119,9 +119,17 @@ FixMDI::~FixMDI()
 int FixMDI::setmask()
 {
   int mask = 0;
+
+  // MD masks
   mask |= POST_INTEGRATE;
   mask |= POST_FORCE;
   mask |= END_OF_STEP;
+
+  // Minimizer masks
+  mask |= MIN_PRE_FORCE;
+  mask |= MIN_PRE_REVERSE;
+  mask |= MIN_POST_FORCE;
+
   return mask;
 }
 
@@ -194,6 +202,43 @@ void FixMDI::post_force(int vflag)
 
   // trigger potential energy computation on next timestep
   pe->addstep(update->ntimestep+1);
+}
+
+
+/* ---------------------------------------------------------------------- */
+
+void FixMDI::min_pre_force(int vflag)
+{
+  cout << "@@@ In min_pre_force" << endl;
+
+  engine_mode(1);
+}
+
+
+/* ---------------------------------------------------------------------- */
+
+void FixMDI::min_pre_reverse(int vflag, int eflag)
+{
+  cout << "@@@ In min_pre_reverse" << endl;
+
+  engine_mode(2);
+}
+
+
+/* ---------------------------------------------------------------------- */
+
+void FixMDI::min_post_force(int vflag)
+{
+  cout << "@@@ In min_post_force" << endl;
+
+  // calculate the energy
+  //potential_energy = pe->compute_scalar();
+
+  //exchange_forces();
+  engine_mode(3);
+
+  // trigger potential energy computation on next timestep
+  //pe->addstep(update->ntimestep+1);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -362,7 +407,7 @@ void FixMDI::engine_mode(int node)
 	// for the first iteration, md_setup calculates the forces
 	md_setup(error);
 	current_node = -2; // special case:
-                          // tells @FORCES command not to move forward
+                           // tells @FORCES command not to move forward
       }
       else {
 	target_node = 2;
@@ -370,7 +415,7 @@ void FixMDI::engine_mode(int node)
       }
     }
     else if (strcmp(command,"@FORCES") == 0 ) {
-      if ( current_node == -1 ) {
+      if ( most_recent_init == 1 and current_node == -1 ) {
 	// for the first iteration, md_setup calculates the forces
 	md_setup(error);
 	current_node = 3;
@@ -787,7 +832,9 @@ void FixMDI::timestep(Error* error)
 
   }
   else if ( most_recent_init == 2 ) {
-    update->minimize->iterate(1);
+    target_node = 1;
+    local_exit_flag = true;
+    //update->minimize->iterate(1);
   }
 }
 
@@ -815,6 +862,9 @@ void FixMDI::optg_init(Error* error)
   lmp->init();
   update->minimize->setup();
 
+  current_node = -1; // after OPTG_INIT
   most_recent_init = 2;
+
+  update->minimize->iterate(10);
 }
 
