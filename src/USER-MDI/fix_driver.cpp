@@ -342,17 +342,26 @@ void FixMDI::engine_mode(int node)
     }
     else if (strcmp(command,"ATOM_STEP") == 0 ) {
       // perform an single iteration of MD or geometry optimization
-      if ( current_node == 4 ) {
+      if ( current_node == -1 ) {
 	// for the first iteration, md_setup calculates the forces
 	md_setup(error);
       }
+      target_node = 1;
       timestep(error);
+
+      // It is possible for node commands, like @PRE-FORCES to request that the code cross from one
+      // MD iteration to another.  In this case, the timestep function should be called again.
+      while ( target_node != 0 and target_node != current_node and
+	      most_recent_init == 1 and current_node == 3 and not exit_flag and not local_exit_flag ) {
+	// start another MD iteration
+	timestep(error);
+      }
     }
     else if (strcmp(command,"@PRE-FORCES") == 0 ) {
-      if ( current_node == 4 ) {
+      if ( current_node == -1 ) {
 	// for the first iteration, md_setup calculates the forces
 	md_setup(error);
-	current_node = 5; // special case:
+	current_node = -2; // special case:
                           // tells @FORCES command not to move forward
       }
       else {
@@ -361,12 +370,12 @@ void FixMDI::engine_mode(int node)
       }
     }
     else if (strcmp(command,"@FORCES") == 0 ) {
-      if ( current_node == 4 ) {
+      if ( current_node == -1 ) {
 	// for the first iteration, md_setup calculates the forces
 	md_setup(error);
 	current_node = 3;
       }
-      else if ( current_node == 5 ) {
+      else if ( current_node == -2 ) {
 	// for the special case when MD_INIT is followed by @PREFORCES, which is followed by @FORCES
 	current_node = 3;
       }
@@ -386,12 +395,21 @@ void FixMDI::engine_mode(int node)
 
     // check if the target node is something other than the current node
     if ( target_node != 0 and target_node != current_node ) {
-      local_exit_flag = true;
+      /*
+      if ( most_recent_init == 1 and current_node == 3 ) { // program control has reached the outer engine_mode
+	// start another MD iteration
+	timestep(error);
+      }
+      else {
+      */
+	local_exit_flag = true;
+	//}
     }
 
   }
 
   // a local exit has completed, so turn off the local exit flag
+  cout << "ENGINE_MODE: EXITED " << target_node << " " << current_node << endl;
   local_exit_flag = false;
 
 }
@@ -728,7 +746,7 @@ void FixMDI::md_init(Error* error)
   update->endstep = update->laststep;
   lmp->init();
   ///////////
-  current_node = 4; // after MD_INIT
+  current_node = -1; // after MD_INIT
   most_recent_init = 1;
   ///////////
 
@@ -751,7 +769,7 @@ void FixMDI::timestep(Error* error)
 {
   if ( most_recent_init == 1 ) {
     cout << "$$$ ATOM_STEP: " << current_node << " " << target_node << endl;
-    if ( current_node == 4 or current_node == 3 ) {
+    if ( current_node == -2 or current_node == -1 or current_node == 3 ) {
 
       update->whichflag = 1; // 1 for dynamics
       timer->init_timeout();
@@ -760,12 +778,10 @@ void FixMDI::timestep(Error* error)
       update->endstep = update->laststep;
       output->next = update->ntimestep + 1;
 
-      target_node = 1;
       update->integrate->run(1);
 
     }
     else {
-      target_node = 1;
       local_exit_flag = true;
     }
 

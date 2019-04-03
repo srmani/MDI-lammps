@@ -61,7 +61,8 @@ class FixMDI : public Fix {
                         // 1 - @COORDS (before pre-force calculation)
                         // 2 - @PREFORCES (before final force calculation)
                         // 3 - @FORCES (before time integration)
-                        // 4 - after MD_INIT command
+                        // -1 - after MD_INIT command
+                        // -2 - after MD_INIT command followed by @PRE-FORCES
 
   // command to be executed at the target node
   char *target_command;
