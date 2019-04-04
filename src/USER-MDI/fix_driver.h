@@ -105,4 +105,27 @@ E: Potential energy ID for fix mdi does not exist
 
 Self-explanatory.
 
+E: Cannot use MDI command without atom IDs
+
+Self-explanatory.
+
+E: MDI command requires consecutive atom IDs
+
+Self-explanatory.
+
+E: Unable to connect to driver
+
+Self-explanatory.
+
+E: Unable to ... driver
+
+Self-explanatory.
+
+E: Unknown command from driver
+
+The driver sent a command that is not supported by the LAMMPS 
+interface.  In some cases this might be because a nonsensical 
+command was sent (i.e. "SCF").  In other cases, the LAMMPS 
+interface might benefit from being expanded.
+
 */
