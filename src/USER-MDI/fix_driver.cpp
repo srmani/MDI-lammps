@@ -30,7 +30,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-//
+
 #include "irregular.h"
 #include "min.h"
 #include "minimize.h"
@@ -41,9 +41,6 @@
 extern "C" {
 #include "mdi.h"
 }
-#include <iostream>
-using namespace std;
-//
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -182,8 +179,6 @@ void FixMDI::setup(int)
 
 void FixMDI::post_integrate()
 {
-  cout << "@@@ In post_integrate" << endl;
-
   engine_mode(1);
 }
 
@@ -191,8 +186,6 @@ void FixMDI::post_integrate()
 
 void FixMDI::post_force(int vflag)
 {
-  cout << "@@@ In post_force" << endl;
-
   // calculate the energy
   potential_energy = pe->compute_scalar();
 
@@ -208,8 +201,6 @@ void FixMDI::post_force(int vflag)
 
 void FixMDI::min_pre_force(int vflag)
 {
-  cout << "@@@ In min_pre_force" << endl;
-
   engine_mode(1);
 }
 
@@ -217,8 +208,6 @@ void FixMDI::min_pre_force(int vflag)
 
 void FixMDI::min_post_force(int vflag)
 {
-  cout << "@@@ In min_post_force" << endl;
-
   // calculate the energy
   potential_energy = pe->compute_scalar();
 
@@ -233,7 +222,6 @@ void FixMDI::min_post_force(int vflag)
 
 void FixMDI::end_of_step()
 {
-  cout << "$$$$ end_of_step" << endl;
   if ( most_recent_init == 1 ) { // md
     // when running md, the simulation only runs for a single iteration
     // after the iteration terminates, control will return to engine mode
@@ -249,25 +237,11 @@ void FixMDI::end_of_step()
 
 void FixMDI::engine_mode(int node)
 {
-  //master = (comm->me==0) ? 1 : 0;
-
-  /*
-  // open the socket
-  int ierr;
-  if (master) {
-    driver_socket = MDI_Accept_Communicator();
-    if (driver_socket <= 0)
-      error->all(FLERR,"Unable to connect to driver");
-  } else driver_socket=0;
-  */
-
   // flag to indicate whether the engine should continue listening for commands at this node
   current_node = node;
   if ( target_node != 0 and target_node != current_node ) {
     local_exit_flag = true;
   }
-
-  cout << "ENGINE_MODE: " << target_node << " " << current_node << " " << local_exit_flag << endl;
 
   /* ----------------------------------------------------------------- */
   // Answer commands from the driver
@@ -360,7 +334,7 @@ void FixMDI::engine_mode(int node)
       // receive the forces from the driver
       receive_forces(error);
     }
-    else if (strcmp(command,"+PRE-FORCES") == 0 ) {
+    else if (strcmp(command,"+FORCES") == 0 ) {
       // receive additional forces from the driver
       // these are added prior to SHAKE or other post-processing
       add_forces(error);
@@ -436,6 +410,16 @@ void FixMDI::engine_mode(int node)
 	local_exit_flag = true;
       }
     }
+    else if (strcmp(command,"MD_EXIT") == 0 ) {
+      most_recent_init = 0;
+
+      // proceed to the @FORCES node, which corresponds to the original engine_mode call
+      target_node = 3;
+      local_exit_flag = true;
+    }
+    else if (strcmp(command,"OPTG_EXIT") == 0 ) {
+      most_recent_init = 0;
+    }
     else if (strcmp(command,"EXIT") == 0 ) {
       // exit the driver code
       exit_flag = true;
@@ -454,21 +438,12 @@ void FixMDI::engine_mode(int node)
 
     // check if the target node is something other than the current node
     if ( target_node != 0 and target_node != current_node ) {
-      /*
-      if ( most_recent_init == 1 and current_node == 3 ) { // program control has reached the outer engine_mode
-	// start another MD iteration
-	timestep(error);
-      }
-      else {
-      */
-	local_exit_flag = true;
-	//}
+      local_exit_flag = true;
     }
 
   }
 
   // a local exit has completed, so turn off the local exit flag
-  cout << "ENGINE_MODE: EXITED " << target_node << " " << current_node << endl;
   local_exit_flag = false;
 
 }
@@ -587,13 +562,6 @@ void FixMDI::send_energy(Error* error)
   double pe;
   double *send_pe = &pe;
 
-  // be certain that the MD simulation has been initialized
-  /*
-  if ( not md_initialized ) {
-    error->all(FLERR,"Unable to compute energy");
-  }
-  */
-
   pe = potential_energy;
 
   // convert the energy to atomic units
@@ -647,7 +615,6 @@ void FixMDI::send_forces(Error* error)
 
   //
   double **ftest = atom->f;
-  cout << "$$$ Forces at start of send_forces: " << ftest[0][0] << endl;
   //
 
   forces = new double[3*atom->natoms];
@@ -685,11 +652,6 @@ void FixMDI::send_forces(Error* error)
     if (ierr != 0)
       error->all(FLERR,"Unable to send atom forces to driver");
   }
-
-  //
-  cout << "$$$ Forces at end of send_forces: " << f[0][0] << endl;
-  //
-
 
   //restore the original set of coordinates
   double **x_new = atom->x;
@@ -751,15 +713,19 @@ void FixMDI::add_forces(Error* error)
   if (master) {
     ierr = MDI_Recv((char*) forces, 3*atom->natoms, MDI_DOUBLE, driver_socket);
     if (ierr != 0)
-      error->all(FLERR,"Unable to receive atom +forces to driver");
+      error->all(FLERR,"Unable to receive atom forces to driver");
   }
   MPI_Bcast(forces,3*atom->natoms,MPI_DOUBLE,0,world);
-  for (int i = 0; i < 3*atom->natoms; i++) {
-    forces[i] /= forceconv;
-  }
 
-  for (int j = 0; j < 3*atom->natoms; j++) {
-    add_force[j] = forces[j];
+  // pick local atoms from the buffer
+  double **f = atom->f;
+  int *mask = atom->mask;
+  int nlocal = atom->nlocal;
+
+  for (int i = 0; i < nlocal; i++) {
+    f[i][0] += forces[3*(atom->tag[i]-1)+0]/forceconv;
+    f[i][1] += forces[3*(atom->tag[i]-1)+1]/forceconv;
+    f[i][2] += forces[3*(atom->tag[i]-1)+2]/forceconv;
   }
 
   delete [] forces;
@@ -804,10 +770,10 @@ void FixMDI::md_init(Error* error)
   update->beginstep = update->firststep;
   update->endstep = update->laststep;
   lmp->init();
-  ///////////
+
+  // set the current node to the special case that represents the outcome of md_init
   current_node = -1; // after MD_INIT
   most_recent_init = 1;
-  ///////////
 
   update->integrate->setup(1);
 }
@@ -816,18 +782,13 @@ void FixMDI::md_init(Error* error)
 void FixMDI::md_setup(Error* error)
 {
   update->integrate->setup(1);
-
-  //
-  double **f = atom->f;
-  cout << "$$$ Forces at end of md_init: " << f[0][0] << endl;
-  //
 }
 
 
 void FixMDI::timestep(Error* error)
 {
   if ( most_recent_init == 1 ) {
-    cout << "$$$ ATOM_STEP: " << current_node << " " << target_node << endl;
+
     if ( current_node == -2 or current_node == -1 or current_node == 3 ) {
 
       update->whichflag = 1; // 1 for dynamics
@@ -848,7 +809,6 @@ void FixMDI::timestep(Error* error)
   else if ( most_recent_init == 2 ) {
     target_node = 1;
     local_exit_flag = true;
-    //update->minimize->iterate(1);
   }
 }
 
@@ -862,9 +822,9 @@ void FixMDI::optg_init(Error* error)
   // create instance of Minimizer class
   minimizer = new Minimize(lmp);
 
+  // initialize the minimizer in a way that ensures optimization will continue until the driver exits
   int narg = 4;
   char* arg[] = {"1.0e-100","1.0e-100","1000000000","1000000000"};
-
   update->etol = force->numeric(FLERR,arg[0]);
   update->ftol = force->numeric(FLERR,arg[1]);
   update->nsteps = force->inumeric(FLERR,arg[2]);
