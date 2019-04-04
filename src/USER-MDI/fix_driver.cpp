@@ -127,7 +127,6 @@ int FixMDI::setmask()
 
   // Minimizer masks
   mask |= MIN_PRE_FORCE;
-  mask |= MIN_PRE_REVERSE;
   mask |= MIN_POST_FORCE;
 
   return mask;
@@ -214,17 +213,6 @@ void FixMDI::min_pre_force(int vflag)
   engine_mode(1);
 }
 
-
-/* ---------------------------------------------------------------------- */
-
-void FixMDI::min_pre_reverse(int vflag, int eflag)
-{
-  cout << "@@@ In min_pre_reverse" << endl;
-
-  engine_mode(2);
-}
-
-
 /* ---------------------------------------------------------------------- */
 
 void FixMDI::min_post_force(int vflag)
@@ -232,13 +220,13 @@ void FixMDI::min_post_force(int vflag)
   cout << "@@@ In min_post_force" << endl;
 
   // calculate the energy
-  //potential_energy = pe->compute_scalar();
+  potential_energy = pe->compute_scalar();
 
-  //exchange_forces();
+  // @FORCES
   engine_mode(3);
 
   // trigger potential energy computation on next timestep
-  //pe->addstep(update->ntimestep+1);
+  pe->addstep(update->ntimestep+1);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -385,7 +373,26 @@ void FixMDI::engine_mode(int node)
       // initialize a new geometry optimization
       optg_init(error);
     }
-    else if (strcmp(command,"ATOM_STEP") == 0 ) {
+    else if (strcmp(command,"@") == 0 ) {
+      target_node = 0;
+      local_exit_flag = true;
+    }
+    else if (strcmp(command,"<@") == 0 ) {
+      if (master) {
+	if ( current_node == 1 ) {
+	  ierr = MDI_Send("@COORDS", MDI_NAME_LENGTH, MDI_CHAR, driver_socket);
+	}
+	else if ( current_node == 2 ) {
+	  ierr = MDI_Send("@PRE-FORCES", MDI_NAME_LENGTH, MDI_CHAR, driver_socket);
+	}
+	else if (current_node == 3 ) {
+	  ierr = MDI_Send("@FORCES", MDI_NAME_LENGTH, MDI_CHAR, driver_socket);
+	}
+	if (ierr != 0)
+	  error->all(FLERR,"Unable to send node to driver");
+      }
+    }
+    else if (strcmp(command,"@COORDS") == 0 ) {
       // perform an single iteration of MD or geometry optimization
       if ( current_node == -1 ) {
 	// for the first iteration, md_setup calculates the forces
@@ -432,6 +439,13 @@ void FixMDI::engine_mode(int node)
     else if (strcmp(command,"EXIT") == 0 ) {
       // exit the driver code
       exit_flag = true;
+
+      // if doing a geometry optimization, set the maximum number of evaluations to 0
+      if ( most_recent_init == 2 ) {
+	update->max_eval = 0;
+      }
+
+
     }
     else {
       // the command is not supported
@@ -849,7 +863,7 @@ void FixMDI::optg_init(Error* error)
   minimizer = new Minimize(lmp);
 
   int narg = 4;
-  char* arg[] = {"1.0e-100","1.0e-100","10000000","10000000"};
+  char* arg[] = {"1.0e-100","1.0e-100","1000000000","1000000000"};
 
   update->etol = force->numeric(FLERR,arg[0]);
   update->ftol = force->numeric(FLERR,arg[1]);
@@ -865,6 +879,6 @@ void FixMDI::optg_init(Error* error)
   current_node = -1; // after OPTG_INIT
   most_recent_init = 2;
 
-  update->minimize->iterate(10);
+  update->minimize->iterate(1000000000);
 }
 

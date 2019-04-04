@@ -40,8 +40,7 @@ class FixMDI : public Fix {
   void post_force(int);
   void end_of_step();
   void min_pre_force(int); //@COORDS
-  void min_pre_reverse(int,int); //@PRE-FORCES?
-  void min_post_force(int); //@FORCES?
+  void min_post_force(int); //@FORCES
 
   double *add_force; // stores forces added using +FORCE command
   double potential_energy; // stores potential energy
