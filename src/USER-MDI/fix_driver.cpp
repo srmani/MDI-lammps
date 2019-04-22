@@ -77,6 +77,7 @@ FixMDI::FixMDI(LAMMPS *lmp, int narg, char **arg) :
   most_recent_init = 0;
   exit_flag = false;
   local_exit_flag = false;
+  target_node = 0;
   target_command = new char[MDI_COMMAND_LENGTH+1];
 
   int n = strlen(id) + 4;
