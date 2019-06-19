@@ -591,12 +591,24 @@ void FixMDI::send_types(Error* error)
 void FixMDI::send_masses(Error* error)
 {
   double * const mass = atom->mass;
+  int * const type = atom->type;
 
   if (master) { 
+    /*
     ierr = MDI_Send((char*) mass, atom->ntypes+1, MDI_DOUBLE, driver_socket);
     if (ierr != 0)
       error->all(FLERR,"Unable to send atom masses to driver");
+    */
+    double *mass_by_atom = new double[atom->natoms];
+    for (int iatom=0; iatom < atom->natoms; iatom++) {
+      mass_by_atom[iatom] = mass[ type[iatom] ];
+    }
+    ierr = MDI_Send((char*) mass_by_atom, atom->natoms, MDI_DOUBLE, driver_socket);
+    if (ierr != 0)
+      error->all(FLERR,"Unable to send atom masses to driver");
+    delete [] mass_by_atom;
   }
+
 }
 
 
