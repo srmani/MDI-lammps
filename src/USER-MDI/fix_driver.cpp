@@ -38,9 +38,7 @@
 #include "output.h"
 #include "timer.h"
 #include "verlet.h"
-extern "C" {
 #include "mdi.h"
-}
 
 using namespace LAMMPS_NS;
 using namespace FixConst;
@@ -717,7 +715,7 @@ void FixMDI::add_forces(Error* error)
 {
   double potconv, posconv, forceconv;
   potconv=MDI_KELVIN_TO_HARTREE/force->boltz;
-  posconv=force->angstrom/MDI_ANGSTROM_TO_BOHR;
+  posconv=force->angstrom * MDI_Conversion_Factor("angstrom","bohr");
   forceconv=potconv*posconv;
 
   double *forces;
@@ -747,20 +745,29 @@ void FixMDI::add_forces(Error* error)
 
 void FixMDI::send_cell(Error* error)
 {
-  double celldata[9];
+  double celldata[12];
 
-  celldata[0] = domain->boxlo[0];
-  celldata[1] = domain->boxlo[1];
-  celldata[2] = domain->boxlo[2];
-  celldata[3] = domain->boxhi[0];
-  celldata[4] = domain->boxhi[1];
-  celldata[5] = domain->boxhi[2];
-  celldata[6] = domain->xy;
-  celldata[7] = domain->xz;
-  celldata[8] = domain->yz;
+  celldata[0] = domain->boxhi[0] - domain->boxlo[0];
+  celldata[1] = 0.0;
+  celldata[2] = 0.0;
+  celldata[3] = domain->xy;
+  celldata[4] = domain->boxhi[1] - domain->boxlo[1];
+  celldata[5] = 0.0;
+  celldata[6] = domain->xz;
+  celldata[7] = domain->yz;
+  celldata[8] = domain->boxhi[2] - domain->boxlo[2];
+  celldata[9 ] = domain->boxlo[0];
+  celldata[10] = domain->boxlo[1];
+  celldata[11] = domain->boxlo[2];
+
+  // convert the units to bohr
+  double unit_conv = force->angstrom * MDI_Conversion_Factor("angstrom","bohr");
+  for (int icell=0; icell < 12; icell++) {
+    celldata[icell] *= unit_conv;
+  }
 
   if (master) { 
-    ierr = MDI_Send((char*) celldata, 9, MDI_DOUBLE, driver_socket);
+    ierr = MDI_Send((char*) celldata, 12, MDI_DOUBLE, driver_socket);
     if (ierr != 0)
       error->all(FLERR,"Unable to send cell dimensions to driver");
   }

@@ -31,9 +31,7 @@
 #include "error.h"
 #include "comm.h"
 #include "fix_driver.h"
-extern "C" {
 #include "mdi.h"
-}
 
 using namespace LAMMPS_NS;
 
