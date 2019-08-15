@@ -109,11 +109,6 @@ int CommandMDI::mdi_md()
   update->endstep = update->laststep;
   lmp->init();
 
-  //<<<<
-  double **f = atom->f;
-  fprintf(screen,"SSS MD_I: %f %f %f\n",f[0][0], f[0][1], f[0][2]);
-  //>>>>
-
   // the MD simulation is now at the @MD_INIT node
   char *command = NULL;
   command = mdi_fix->engine_mode(-1);
