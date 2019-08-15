@@ -29,6 +29,7 @@ class CommandMDI : protected Pointers {
   CommandMDI(class LAMMPS *);
   virtual ~CommandMDI();
   void command(int, char **);
+  int mdi_md();
 
 private:
   class FixMDI *mdi_fix;

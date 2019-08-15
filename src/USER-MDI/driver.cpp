@@ -33,6 +33,8 @@
 #include "fix_driver.h"
 #include "mdi.h"
 
+#include "verlet.h"
+
 using namespace LAMMPS_NS;
 
 /* ---------------------------------------------------------------------- */
@@ -69,8 +71,143 @@ void CommandMDI::command(int narg, char **arg)
     error->all(FLERR,"MDI command requires consecutive atom IDs");
 
   // begin engine_mode
-  mdi_fix->engine_mode(0);
+  char *command = NULL;
+  while ( true ) {
+    command = mdi_fix->engine_mode(0);
+
+    if (strcmp(command,"MD_INIT") == 0 ) {
+      // enter MDI simulation control loop
+      int received_exit = mdi_md();
+      if ( received_exit == 1 ) {
+	return;
+      }
+    }
+    else if (strcmp(command,"EXIT") == 0 ) {
+      return;
+    }
+    else {
+      error->all(FLERR,strcat("MDI received unsupported command: ",command));
+    }
+  }
 
   return;
+
+}
+
+
+
+int CommandMDI::mdi_md()
+{
+  // initialize an MD simulation
+  update->whichflag = 1; // 1 for dynamics
+  timer->init_timeout();
+  update->nsteps = 1;
+  update->ntimestep = 0;
+  update->firststep = update->ntimestep;
+  update->laststep = update->ntimestep + update->nsteps;
+  update->beginstep = update->firststep;
+  update->endstep = update->laststep;
+  lmp->init();
+
+  //<<<<
+  double **f = atom->f;
+  fprintf(screen,"SSS MD_I: %f %f %f\n",f[0][0], f[0][1], f[0][2]);
+  //>>>>
+
+  // the MD simulation is now at the @MD_INIT node
+  char *command = NULL;
+  command = mdi_fix->engine_mode(-1);
+
+  // only two commands are valid at this point
+  // SHOULD PROBABLY HAVE:
+  // if ( command.scope < "GLOBAL" ) {
+  //    pass
+  // }
+  if (strcmp(command,"MD_EXIT") == 0 ) {
+    // return, but do not flag for global exit
+    return 0;
+  }
+  else if (strcmp(command,"EXIT") == 0 ) {
+    // return, and flag for global exit
+    return 1;
+  }
+  // Don't include the error until after the command.scope check is added above
+  /*
+  else {
+    error->all(FLERR,strcat("MDI received unsupported command: ",command));
+  }
+  */
+
+  // NOTE: CURRENTLY TRUSTING THAT command = @FORCES
+
+  // continue the MD simulation
+  update->integrate->setup(1);
+
+  //<<<<
+  double **f2 = atom->f;
+  fprintf(screen,"SSS MDI2: %f %f %f\n",f2[0][0], f2[0][1], f2[0][2]);
+  //>>>>
+
+  // the MD simulation is now at the @FORCES node
+  command = mdi_fix->engine_mode(3);
+  //command = mdi_fix->engine_mode(2);
+  command = mdi_fix->command;
+
+  // only two commands are valid at this point
+  // SHOULD PROBABLY HAVE:
+  // if ( command.scope < "GLOBAL" ) {
+  //    pass
+  // }
+  if (strcmp(command,"MD_EXIT") == 0 ) {
+    // return, but do not flag for global exit
+    return 0;
+  }
+  else if (strcmp(command,"EXIT") == 0 ) {
+    // return, and flag for global exit
+    return 1;
+  }
+  // Don't include the error until after the command.scope check is added above
+  /*
+  else {
+    error->all(FLERR,strcat("MDI received unsupported command: ",command));
+  }
+  */
+
+  // do MD iterations until told to exit
+  while ( true ) {
+
+    // run an MD timestep
+    update->whichflag = 1; // 1 for dynamics
+    timer->init_timeout();
+    update->nsteps += 1;
+    update->laststep += 1;
+    update->endstep = update->laststep;
+    output->next = update->ntimestep + 1;
+    update->integrate->run(1);
+
+    // get the most recent command the MDI engine received
+    command = mdi_fix->command;
+
+    // only two commands are valid at this point
+    // SHOULD PROBABLY HAVE:
+    // if ( command.scope < "GLOBAL" ) {
+    //    pass
+    // }
+    if (strcmp(command,"MD_EXIT") == 0 ) {
+      // return, but do not flag for global exit
+      return 0;
+    }
+    else if (strcmp(command,"EXIT") == 0 ) {
+      // return, and flag for global exit
+      return 1;
+    }
+    // Don't include the error until after the command.scope check is added above
+    /*
+    else {
+      error->all(FLERR,strcat("MDI received unsupported command: ",command));
+    }
+    */
+
+  }
 
 }

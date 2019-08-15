@@ -32,7 +32,7 @@ class FixMDI : public Fix {
   int setmask();
   void init();
 
-  void engine_mode(int node);
+  char *engine_mode(int node);
 
   // receive and update forces
   void setup(int);
@@ -44,6 +44,9 @@ class FixMDI : public Fix {
 
   double *add_force; // stores forces added using +FORCE command
   double potential_energy; // stores potential energy
+
+  // current command
+  char *command;
 
  protected:
   void exchange_forces();
@@ -61,7 +64,7 @@ class FixMDI : public Fix {
   int target_node;      // is the code supposed to advance to a particular node?
                         // 0 - none
                         // 1 - @COORDS (before pre-force calculation)
-                        // 2 - @PREFORCES (before final force calculation)
+                        // 2 - @PRE-FORCES (before final force calculation)
                         // 3 - @FORCES (before time integration)
                         // -1 - after MD_INIT command
                         // -2 - after MD_INIT command followed by @PRE-FORCES

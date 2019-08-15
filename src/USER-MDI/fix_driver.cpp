@@ -77,6 +77,7 @@ FixMDI::FixMDI(LAMMPS *lmp, int narg, char **arg) :
   local_exit_flag = false;
   target_node = 0;
   target_command = new char[MDI_COMMAND_LENGTH+1];
+  command = new char[MDI_COMMAND_LENGTH+1];
 
   int n = strlen(id) + 4;
   id_pe = new char[n];
@@ -109,6 +110,7 @@ FixMDI::~FixMDI()
   delete irregular;
   delete [] id_pe;
   delete [] target_command;
+  delete [] command;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -170,8 +172,14 @@ void FixMDI::setup(int)
   //compute the potential energy
   potential_energy = pe->compute_scalar();
 
+  fprintf(screen, "------- IN MDI FIX SETUP ---------\n");
+
   // trigger potential energy computation on next timestep
   pe->addstep(update->ntimestep+1);
+
+  if ( most_recent_init == 1 ) { // md
+    engine_mode(2);
+  }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -225,7 +233,10 @@ void FixMDI::end_of_step()
     // when running md, the simulation only runs for a single iteration
     // after the iteration terminates, control will return to engine mode
     // set current_node so that engine_mode is using the correct node
-    current_node = 3;
+    //////////
+    //current_node = 3;
+    engine_mode(3);
+    //////////
   }
   else if ( most_recent_init == 2 ) { // optg
     engine_mode(3);
@@ -234,8 +245,12 @@ void FixMDI::end_of_step()
 
 /* ---------------------------------------------------------------------- */
 
-void FixMDI::engine_mode(int node)
+char *FixMDI::engine_mode(int node)
 {
+  //<<<<
+  fprintf(screen,"AAA ENGINE MODE: %i\n",node);
+  //>>>>
+
   // flag to indicate whether the engine should continue listening for commands at this node
   current_node = node;
   if ( target_node != 0 and target_node != current_node ) {
@@ -245,7 +260,7 @@ void FixMDI::engine_mode(int node)
   /* ----------------------------------------------------------------- */
   // Answer commands from the driver
   /* ----------------------------------------------------------------- */
-  char command[MDI_COMMAND_LENGTH+1];
+  //char command[MDI_COMMAND_LENGTH+1];
 
   while (not exit_flag and not local_exit_flag) {
 
@@ -340,7 +355,9 @@ void FixMDI::engine_mode(int node)
     }
     else if (strcmp(command,"MD_INIT") == 0 ) {
       // initialize a new MD simulation
-      md_init(error);
+      //md_init(error);
+      most_recent_init = 1;
+      local_exit_flag = true;
     }
     else if (strcmp(command,"OPTG_INIT") == 0 ) {
       // initialize a new geometry optimization
@@ -366,6 +383,7 @@ void FixMDI::engine_mode(int node)
       }
     }
     else if (strcmp(command,"@COORDS") == 0 ) {
+      /*
       // perform an single iteration of MD or geometry optimization
       if ( current_node == -1 ) {
 	// for the first iteration, md_setup calculates the forces
@@ -381,8 +399,12 @@ void FixMDI::engine_mode(int node)
 	// start another MD iteration
 	timestep(error);
       }
+      */
+      target_node = 1;
+      local_exit_flag = true;
     }
     else if (strcmp(command,"@PRE-FORCES") == 0 ) {
+      /*
       if ( current_node == -1 ) {
 	// for the first iteration, md_setup calculates the forces
 	md_setup(error);
@@ -393,15 +415,20 @@ void FixMDI::engine_mode(int node)
 	target_node = 2;
 	local_exit_flag = true;
       }
+      */
+      target_node = 2;
+      local_exit_flag = true;
     }
     else if (strcmp(command,"@FORCES") == 0 ) {
       if ( most_recent_init == 1 and current_node == -1 ) {
 	// for the first iteration, md_setup calculates the forces
-	md_setup(error);
-	current_node = 3;
+	//md_setup(error);
+	//current_node = 3;
+	target_node = 3;
+	local_exit_flag = true;
       }
       else if ( current_node == -2 ) {
-	// for the special case when MD_INIT is followed by @PREFORCES, which is followed by @FORCES
+	// for the special case when MD_INIT is followed by @PRE-FORCES, which is followed by @FORCES
 	current_node = 3;
       }
       else {
@@ -444,6 +471,8 @@ void FixMDI::engine_mode(int node)
 
   // a local exit has completed, so turn off the local exit flag
   local_exit_flag = false;
+
+  return command;
 
 }
 
@@ -641,7 +670,6 @@ void FixMDI::send_forces(Error* error)
     x_buf[3*i+2] = x[i][2];
   }
 
-
   // calculate the forces
   update->whichflag = 1; // 1 for dynamics
   update->nsteps = 1;
@@ -655,6 +683,7 @@ void FixMDI::send_forces(Error* error)
     forces[3*(atom->tag[i]-1)+1] = f[i][1]*forceconv;
     forces[3*(atom->tag[i]-1)+2] = f[i][2]*forceconv;
   }
+  fprintf(screen,"SSS SEND: %f %f %f\n",f[0][0], f[0][1], f[0][2]);
 
   MPI_Reduce(forces, forces_reduced, 3*atom->natoms, MPI_DOUBLE, MPI_SUM, 0, world);
 
@@ -701,11 +730,13 @@ void FixMDI::receive_forces(Error* error)
   int *mask = atom->mask;
   int nlocal = atom->nlocal;
 
+  fprintf(screen,"SSS BEFR: %f %f %f\n",f[0][0], f[0][1], f[0][2]);
   for (int i = 0; i < nlocal; i++) {
     f[i][0] = forces[3*(atom->tag[i]-1)+0]/forceconv;
     f[i][1] = forces[3*(atom->tag[i]-1)+1]/forceconv;
     f[i][2] = forces[3*(atom->tag[i]-1)+2]/forceconv;
   }
+  fprintf(screen,"SSS RECV: %f %f %f\n",f[0][0], f[0][1], f[0][2]);
 
   delete [] forces;
 }
@@ -795,7 +826,11 @@ void FixMDI::md_init(Error* error)
   current_node = -1; // after MD_INIT
   most_recent_init = 1;
 
-  update->integrate->setup(1);
+  //update->integrate->setup(1);
+  //<<<<
+  double **f = atom->f;
+  fprintf(screen,"SSS INIT: %f %f %f\n",f[0][0], f[0][1], f[0][2]);
+  //>>>>
 }
 
 
