@@ -386,6 +386,12 @@ char *FixMDI::engine_mode(int node)
 	else if (current_node == 3 ) {
 	  ierr = MDI_Send("@FORCES", MDI_NAME_LENGTH, MDI_CHAR, driver_socket);
 	}
+	else if ( current_node == -1 ) {
+	  ierr = MDI_Send("@MD_INIT", MDI_NAME_LENGTH, MDI_CHAR, driver_socket);
+	}
+	else if ( current_node == -2 ) {
+	  ierr = MDI_Send("@OPTG_INIT", MDI_NAME_LENGTH, MDI_CHAR, driver_socket);
+	}
 	if (ierr != 0)
 	  error->all(FLERR,"Unable to send node to driver");
       }
@@ -789,12 +795,12 @@ void FixMDI::optg_init(Error* error)
   update->endstep = update->laststep = update->firststep + update->nsteps;
   lmp->init();
 
-  engine_mode(-1);
+  engine_mode(-2);
 
   update->minimize->setup();
 
   current_node = -1; // after OPTG_INIT
   most_recent_init = 2;
 
-  update->minimize->iterate(1000000000);
+  update->minimize->iterate(update->nsteps);
 }
