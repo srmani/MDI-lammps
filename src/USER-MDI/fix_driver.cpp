@@ -362,14 +362,23 @@ char *FixMDI::engine_mode(int node)
       add_forces(error);
     }
     else if (strcmp(command,"INIT_MD") == 0 ) {
+      if ( most_recent_init != 0 ) {
+	error->all(FLERR,"MDI is already performing a simulation");
+      }
+
       // initialize a new MD simulation
-      //md_init(error);
       most_recent_init = 1;
       local_exit_flag = true;
     }
     else if (strcmp(command,"INIT_OPTG") == 0 ) {
+      if ( most_recent_init != 0 ) {
+	error->all(FLERR,"MDI is already performing a simulation");
+      }
+
       // initialize a new geometry optimization
-      optg_init(error);
+      most_recent_init = 2;
+      local_exit_flag = true;
+      //optg_init(error);
     }
     else if (strcmp(command,"@") == 0 ) {
       target_node = 0;
@@ -774,35 +783,4 @@ void FixMDI::send_cell(Error* error)
     if (ierr != 0)
       error->all(FLERR,"Unable to send cell dimensions to driver");
   }
-}
-
-
-void FixMDI::optg_init(Error* error)
-{
-  if ( most_recent_init != 0 ) {
-      error->all(FLERR,"Atomic propagation method already initialized");
-  }
-
-  // create instance of Minimizer class
-  minimizer = new Minimize(lmp);
-
-  // initialize the minimizer in a way that ensures optimization will continue until the driver exits
-  update->etol = std::numeric_limits<double>::min();
-  update->ftol = std::numeric_limits<double>::min();
-  update->nsteps = std::numeric_limits<int>::max();
-  update->max_eval = std::numeric_limits<int>::max();
-
-  update->whichflag = 2; // 2 for minimization
-  update->beginstep = update->firststep = update->ntimestep;
-  update->endstep = update->laststep = update->firststep + update->nsteps;
-  lmp->init();
-
-  engine_mode(-2);
-
-  update->minimize->setup();
-
-  current_node = -1; // after OPTG_INIT
-  most_recent_init = 2;
-
-  update->minimize->iterate(update->nsteps);
 }

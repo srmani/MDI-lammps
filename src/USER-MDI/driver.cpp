@@ -18,6 +18,7 @@
 
 #include <mpi.h>
 #include <string.h>
+#include <limits>
 #include "driver.h"
 #include "atom.h"
 #include "domain.h"
@@ -78,6 +79,13 @@ void CommandMDI::command(int narg, char **arg)
     if (strcmp(command,"INIT_MD") == 0 ) {
       // enter MDI simulation control loop
       int received_exit = mdi_md();
+      if ( received_exit == 1 ) {
+	return;
+      }
+    }
+    if (strcmp(command,"INIT_OPTG") == 0 ) {
+      // enter MDI simulation control loop
+      int received_exit = mdi_optg();
       if ( received_exit == 1 ) {
 	return;
       }
@@ -205,4 +213,94 @@ int CommandMDI::mdi_md()
 
   }
 
+}
+
+
+
+int CommandMDI::mdi_optg()
+{
+  char *command = NULL;
+
+  // create instance of the Minimizer class
+  Minimize *minimizer = new Minimize(lmp);
+
+  // initialize the minimizer in a way that ensures optimization will continue until the driver exits
+  update->etol = std::numeric_limits<double>::min();
+  update->ftol = std::numeric_limits<double>::min();
+  update->nsteps = std::numeric_limits<int>::max();
+  update->max_eval = std::numeric_limits<int>::max();
+
+  update->whichflag = 2; // 2 for minimization
+  update->beginstep = update->firststep = update->ntimestep;
+  update->endstep = update->laststep = update->firststep + update->nsteps;
+  lmp->init();
+
+  command = mdi_fix->engine_mode(-2);
+
+  // only two commands are valid at this point
+  // SHOULD PROBABLY HAVE:
+  // if ( command.scope < "GLOBAL" ) {
+  //    pass
+  // }
+  if (strcmp(command,"EXIT_SIM") == 0 ) {
+    // return, but do not flag for global exit
+    return 0;
+  }
+  else if (strcmp(command,"EXIT") == 0 ) {
+    // return, and flag for global exit
+    return 1;
+  }
+  // Don't include the error until after the command.scope check is added above
+  /*
+  else {
+    error->all(FLERR,strcat("MDI received unsupported command: ",command));
+  }
+  */
+
+  update->minimize->setup();
+
+  // only two commands are valid at this point
+  // SHOULD PROBABLY HAVE:
+  // if ( command.scope < "GLOBAL" ) {
+  //    pass
+  // }
+  if (strcmp(command,"EXIT_SIM") == 0 ) {
+    // return, but do not flag for global exit
+    return 0;
+  }
+  else if (strcmp(command,"EXIT") == 0 ) {
+    // return, and flag for global exit
+    return 1;
+  }
+  // Don't include the error until after the command.scope check is added above
+  /*
+  else {
+    error->all(FLERR,strcat("MDI received unsupported command: ",command));
+  }
+  */
+
+  update->minimize->iterate(update->nsteps);
+
+  // only two commands are valid at this point
+  // SHOULD PROBABLY HAVE:
+  // if ( command.scope < "GLOBAL" ) {
+  //    pass
+  // }
+  if (strcmp(command,"EXIT_SIM") == 0 ) {
+    // return, but do not flag for global exit
+    return 0;
+  }
+  else if (strcmp(command,"EXIT") == 0 ) {
+    // return, and flag for global exit
+    return 1;
+  }
+  // Don't include the error until after the command.scope check is added above
+  /*
+  else {
+    error->all(FLERR,strcat("MDI received unsupported command: ",command));
+  }
+  */
+
+  error->all(FLERR,strcat("MDI reached end of OPTG simulation with invalid command: ",command));
+  return 0;
 }

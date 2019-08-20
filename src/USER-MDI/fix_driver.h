@@ -87,7 +87,6 @@ class FixMDI : public Fix {
   void add_forces(Error *);
   void receive_forces(Error *);
   void send_cell(Error *);
-  void optg_init(Error *);
 
 };
 
