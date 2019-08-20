@@ -36,6 +36,7 @@ class FixMDI : public Fix {
 
   // receive and update forces
   void setup(int);
+  void min_setup(int);
   void post_integrate();
   void post_force(int);
   void end_of_step();

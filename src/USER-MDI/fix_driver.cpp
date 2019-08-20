@@ -30,6 +30,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <limits>
 
 #include "irregular.h"
 #include "min.h"
@@ -165,7 +166,7 @@ void FixMDI::init()
 
 /* ---------------------------------------------------------------------- */
 
-void FixMDI::setup(int)
+void FixMDI::setup(int vflag)
 {
   //compute the potential energy
   potential_energy = pe->compute_scalar();
@@ -177,6 +178,19 @@ void FixMDI::setup(int)
     // @PRE-FORCES
     engine_mode(2);
   }
+}
+
+/* ---------------------------------------------------------------------- */
+
+void FixMDI::min_setup(int vflag)
+{
+  potential_energy = pe->compute_scalar();
+
+  // trigger potential energy computation on next timestep
+  pe->addstep(update->ntimestep+1);
+
+  // @FORCES
+  engine_mode(3);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -402,8 +416,13 @@ char *FixMDI::engine_mode(int node)
       // exit the driver code
       exit_flag = true;
 
-      // if doing a geometry optimization, set the maximum number of evaluations to 0
+      // are we in the middle of a geometry optimization?
       if ( most_recent_init == 2 ) {
+	// ensure that the energy and force tolerances are met
+	update->etol = std::numeric_limits<double>::max();
+	update->ftol = std::numeric_limits<double>::max();
+
+	// set the maximum number of force evaluations to 0
 	update->max_eval = 0;
       }
     }
@@ -760,17 +779,18 @@ void FixMDI::optg_init(Error* error)
   minimizer = new Minimize(lmp);
 
   // initialize the minimizer in a way that ensures optimization will continue until the driver exits
-  int narg = 4;
-  char* arg[] = {"1.0e-100","1.0e-100","1000000000","1000000000"};
-  update->etol = force->numeric(FLERR,arg[0]);
-  update->ftol = force->numeric(FLERR,arg[1]);
-  update->nsteps = force->inumeric(FLERR,arg[2]);
-  update->max_eval = force->inumeric(FLERR,arg[3]);
+  update->etol = std::numeric_limits<double>::min();
+  update->ftol = std::numeric_limits<double>::min();
+  update->nsteps = std::numeric_limits<int>::max();
+  update->max_eval = std::numeric_limits<int>::max();
 
   update->whichflag = 2; // 2 for minimization
   update->beginstep = update->firststep = update->ntimestep;
   update->endstep = update->laststep = update->firststep + update->nsteps;
   lmp->init();
+
+  engine_mode(-1);
+
   update->minimize->setup();
 
   current_node = -1; // after OPTG_INIT
