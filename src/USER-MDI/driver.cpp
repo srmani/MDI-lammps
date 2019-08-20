@@ -75,7 +75,7 @@ void CommandMDI::command(int narg, char **arg)
   while ( true ) {
     command = mdi_fix->engine_mode(0);
 
-    if (strcmp(command,"MD_INIT") == 0 ) {
+    if (strcmp(command,"INIT_MD") == 0 ) {
       // enter MDI simulation control loop
       int received_exit = mdi_md();
       if ( received_exit == 1 ) {
@@ -153,7 +153,7 @@ int CommandMDI::mdi_md()
   // if ( command.scope < "GLOBAL" ) {
   //    pass
   // }
-  if (strcmp(command,"MD_EXIT") == 0 ) {
+  if (strcmp(command,"EXIT_SIM") == 0 ) {
     // return, but do not flag for global exit
     return 0;
   }
@@ -188,7 +188,7 @@ int CommandMDI::mdi_md()
     // if ( command.scope < "GLOBAL" ) {
     //    pass
     // }
-    if (strcmp(command,"MD_EXIT") == 0 ) {
+    if (strcmp(command,"EXIT_SIM") == 0 ) {
       // return, but do not flag for global exit
       return 0;
     }

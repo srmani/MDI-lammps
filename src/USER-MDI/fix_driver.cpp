@@ -361,13 +361,13 @@ char *FixMDI::engine_mode(int node)
       // these are added prior to SHAKE or other post-processing
       add_forces(error);
     }
-    else if (strcmp(command,"MD_INIT") == 0 ) {
+    else if (strcmp(command,"INIT_MD") == 0 ) {
       // initialize a new MD simulation
       //md_init(error);
       most_recent_init = 1;
       local_exit_flag = true;
     }
-    else if (strcmp(command,"OPTG_INIT") == 0 ) {
+    else if (strcmp(command,"INIT_OPTG") == 0 ) {
       // initialize a new geometry optimization
       optg_init(error);
     }
@@ -386,11 +386,8 @@ char *FixMDI::engine_mode(int node)
 	else if (current_node == 3 ) {
 	  ierr = MDI_Send("@FORCES", MDI_NAME_LENGTH, MDI_CHAR, driver_socket);
 	}
-	else if ( current_node == -1 ) {
-	  ierr = MDI_Send("@MD_INIT", MDI_NAME_LENGTH, MDI_CHAR, driver_socket);
-	}
-	else if ( current_node == -2 ) {
-	  ierr = MDI_Send("@OPTG_INIT", MDI_NAME_LENGTH, MDI_CHAR, driver_socket);
+	else if ( current_node == -1 or current_node == -2 ) {
+	  ierr = MDI_Send("@START", MDI_NAME_LENGTH, MDI_CHAR, driver_socket);
 	}
 	if (ierr != 0)
 	  error->all(FLERR,"Unable to send node to driver");
@@ -408,15 +405,20 @@ char *FixMDI::engine_mode(int node)
       target_node = 3;
       local_exit_flag = true;
     }
-    else if (strcmp(command,"MD_EXIT") == 0 ) {
+    else if (strcmp(command,"EXIT_SIM") == 0 ) {
       most_recent_init = 0;
 
-      // proceed to the @FORCES node, which corresponds to the original engine_mode call
-      target_node = 3;
       local_exit_flag = true;
-    }
-    else if (strcmp(command,"OPTG_EXIT") == 0 ) {
-      most_recent_init = 0;
+
+      // are we in the middle of a geometry optimization?
+      if ( most_recent_init == 2 ) {
+	// ensure that the energy and force tolerances are met
+	update->etol = std::numeric_limits<double>::max();
+	update->ftol = std::numeric_limits<double>::max();
+
+	// set the maximum number of force evaluations to 0
+	update->max_eval = 0;
+      }
     }
     else if (strcmp(command,"EXIT") == 0 ) {
       // exit the driver code
