@@ -76,14 +76,14 @@ void CommandMDI::command(int narg, char **arg)
   while ( true ) {
     command = mdi_fix->engine_mode(0);
 
-    if (strcmp(command,"INIT_MD") == 0 ) {
+    if (strcmp(command,"@INIT_MD") == 0 ) {
       // enter MDI simulation control loop
       int received_exit = mdi_md();
       if ( received_exit == 1 ) {
 	return;
       }
     }
-    if (strcmp(command,"INIT_OPTG") == 0 ) {
+    if (strcmp(command,"@INIT_OPTG") == 0 ) {
       // enter MDI simulation control loop
       int received_exit = mdi_optg();
       if ( received_exit == 1 ) {

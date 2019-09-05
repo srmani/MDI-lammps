@@ -361,7 +361,7 @@ char *FixMDI::engine_mode(int node)
       // these are added prior to SHAKE or other post-processing
       add_forces(error);
     }
-    else if (strcmp(command,"INIT_MD") == 0 ) {
+    else if (strcmp(command,"@INIT_MD") == 0 ) {
       if ( most_recent_init != 0 ) {
 	error->all(FLERR,"MDI is already performing a simulation");
       }
@@ -370,7 +370,7 @@ char *FixMDI::engine_mode(int node)
       most_recent_init = 1;
       local_exit_flag = true;
     }
-    else if (strcmp(command,"INIT_OPTG") == 0 ) {
+    else if (strcmp(command,"@INIT_OPTG") == 0 ) {
       if ( most_recent_init != 0 ) {
 	error->all(FLERR,"MDI is already performing a simulation");
       }
