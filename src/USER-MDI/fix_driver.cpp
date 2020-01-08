@@ -577,7 +577,7 @@ void FixMDI::send_charges(Error* error)
 void FixMDI::send_energy(Error* error)
 {
   double kelvin_to_hartree;
-  MDI_Conversion_Factor("kelvin", "hartree", &kelvin_to_hartree);
+  MDI_Conversion_Factor("kelvin_energy", "hartree", &kelvin_to_hartree);
 
   double pe;
   double *send_pe = &pe;
@@ -631,7 +631,7 @@ void FixMDI::send_forces(Error* error)
   double angstrom_to_bohr;
   MDI_Conversion_Factor("angstrom", "bohr", &angstrom_to_bohr);
   double kelvin_to_hartree;
-  MDI_Conversion_Factor("kelvin", "hartree", &kelvin_to_hartree);
+  MDI_Conversion_Factor("kelvin_energy", "hartree", &kelvin_to_hartree);
 
   double potconv, posconv, forceconv;
   potconv=kelvin_to_hartree/force->boltz;
@@ -707,7 +707,7 @@ void FixMDI::receive_forces(Error* error)
   double angstrom_to_bohr;
   MDI_Conversion_Factor("angstrom", "bohr", &angstrom_to_bohr);
   double kelvin_to_hartree;
-  MDI_Conversion_Factor("kelvin", "hartree", &kelvin_to_hartree);
+  MDI_Conversion_Factor("kelvin_energy", "hartree", &kelvin_to_hartree);
 
   double potconv, posconv, forceconv;
   potconv=kelvin_to_hartree/force->boltz;
@@ -744,7 +744,7 @@ void FixMDI::add_forces(Error* error)
   double angstrom_to_bohr;
   MDI_Conversion_Factor("angstrom", "bohr", &angstrom_to_bohr);
   double kelvin_to_hartree;
-  MDI_Conversion_Factor("kelvin", "hartree", &kelvin_to_hartree);
+  MDI_Conversion_Factor("kelvin_energy", "hartree", &kelvin_to_hartree);
 
   double potconv, posconv, forceconv;
   potconv=kelvin_to_hartree/force->boltz;
