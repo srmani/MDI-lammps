@@ -95,7 +95,7 @@ FixMDI::FixMDI(LAMMPS *lmp, int narg, char **arg) :
   // accept a communicator to the driver
   int ierr;
   if (master) {
-    driver_socket = MDI_Accept_Communicator();
+    MDI_Accept_Communicator(&driver_socket);
     if (driver_socket <= 0)
       error->all(FLERR,"Unable to connect to driver");
   } else driver_socket=0;
@@ -466,7 +466,9 @@ char *FixMDI::engine_mode(int node)
 void FixMDI::receive_coordinates(Error* error)
 {
   double posconv;
-  posconv=force->angstrom/MDI_ANGSTROM_TO_BOHR;
+  double angstrom_to_bohr;
+  MDI_Conversion_Factor("angstrom", "bohr", &angstrom_to_bohr);
+  posconv=force->angstrom/angstrom_to_bohr;
 
   // create a buffer to hold the coordinates
   double *buffer;
@@ -510,7 +512,9 @@ void FixMDI::receive_coordinates(Error* error)
 void FixMDI::send_coordinates(Error* error)
 {
   double posconv;
-  posconv=force->angstrom/MDI_ANGSTROM_TO_BOHR;
+  double angstrom_to_bohr;
+  MDI_Conversion_Factor("angstrom", "bohr", &angstrom_to_bohr);
+  posconv=force->angstrom/angstrom_to_bohr;
 
   double *coords;
   double *coords_reduced;
@@ -572,6 +576,8 @@ void FixMDI::send_charges(Error* error)
 
 void FixMDI::send_energy(Error* error)
 {
+  double kelvin_to_hartree;
+  MDI_Conversion_Factor("kelvin", "hartree", &kelvin_to_hartree);
 
   double pe;
   double *send_pe = &pe;
@@ -579,7 +585,7 @@ void FixMDI::send_energy(Error* error)
   pe = potential_energy;
 
   // convert the energy to atomic units
-  pe *= MDI_KELVIN_TO_HARTREE/force->boltz;
+  pe *= kelvin_to_hartree/force->boltz;
 
   if (master) {
     ierr = MDI_Send((char*) send_pe, 1, MDI_DOUBLE, driver_socket);
@@ -622,9 +628,14 @@ void FixMDI::send_masses(Error* error)
 
 void FixMDI::send_forces(Error* error)
 {
+  double angstrom_to_bohr;
+  MDI_Conversion_Factor("angstrom", "bohr", &angstrom_to_bohr);
+  double kelvin_to_hartree;
+  MDI_Conversion_Factor("kelvin", "hartree", &kelvin_to_hartree);
+
   double potconv, posconv, forceconv;
-  potconv=MDI_KELVIN_TO_HARTREE/force->boltz;
-  posconv=force->angstrom/MDI_ANGSTROM_TO_BOHR;
+  potconv=kelvin_to_hartree/force->boltz;
+  posconv=force->angstrom/angstrom_to_bohr;
   forceconv=potconv*posconv;
 
   double *forces;
@@ -693,9 +704,14 @@ void FixMDI::send_forces(Error* error)
 
 void FixMDI::receive_forces(Error* error)
 {
+  double angstrom_to_bohr;
+  MDI_Conversion_Factor("angstrom", "bohr", &angstrom_to_bohr);
+  double kelvin_to_hartree;
+  MDI_Conversion_Factor("kelvin", "hartree", &kelvin_to_hartree);
+
   double potconv, posconv, forceconv;
-  potconv=MDI_KELVIN_TO_HARTREE/force->boltz;
-  posconv=force->angstrom/MDI_ANGSTROM_TO_BOHR;
+  potconv=kelvin_to_hartree/force->boltz;
+  posconv=force->angstrom/angstrom_to_bohr;
   forceconv=potconv*posconv;
 
   double *forces;
@@ -725,9 +741,14 @@ void FixMDI::receive_forces(Error* error)
 
 void FixMDI::add_forces(Error* error)
 {
+  double angstrom_to_bohr;
+  MDI_Conversion_Factor("angstrom", "bohr", &angstrom_to_bohr);
+  double kelvin_to_hartree;
+  MDI_Conversion_Factor("kelvin", "hartree", &kelvin_to_hartree);
+
   double potconv, posconv, forceconv;
-  potconv=MDI_KELVIN_TO_HARTREE/force->boltz;
-  posconv=force->angstrom * MDI_Conversion_Factor("angstrom","bohr");
+  potconv=kelvin_to_hartree/force->boltz;
+  posconv=force->angstrom * angstrom_to_bohr;
   forceconv=potconv*posconv;
 
   double *forces;
@@ -757,6 +778,9 @@ void FixMDI::add_forces(Error* error)
 
 void FixMDI::send_cell(Error* error)
 {
+  double angstrom_to_bohr;
+  MDI_Conversion_Factor("angstrom", "bohr", &angstrom_to_bohr);
+
   double celldata[12];
 
   celldata[0] = domain->boxhi[0] - domain->boxlo[0];
@@ -773,7 +797,7 @@ void FixMDI::send_cell(Error* error)
   celldata[11] = domain->boxlo[2];
 
   // convert the units to bohr
-  double unit_conv = force->angstrom * MDI_Conversion_Factor("angstrom","bohr");
+  double unit_conv = force->angstrom * angstrom_to_bohr;
   for (int icell=0; icell < 12; icell++) {
     celldata[icell] *= unit_conv;
   }
