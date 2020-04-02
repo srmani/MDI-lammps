@@ -51,6 +51,7 @@ int main(int argc, char **argv)
 #ifdef LAMMPS_EXCEPTIONS
   try {
     LAMMPS *lammps = new LAMMPS(argc,argv,MPI_COMM_WORLD);
+    MPI_Comm world_comm = lammps->world;
     lammps->input->file();
     delete lammps;
   } catch(LAMMPSAbortException & ae) {
@@ -61,10 +62,11 @@ int main(int argc, char **argv)
   }
 #else
   LAMMPS *lammps = new LAMMPS(argc,argv,MPI_COMM_WORLD);
+  MPI_Comm world_comm = lammps->world;
   lammps->input->file();
   delete lammps;
 #endif
-  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(world_comm);
   MPI_Finalize();
 
 #ifdef FFT_FFTW3
