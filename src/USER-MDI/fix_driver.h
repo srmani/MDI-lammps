@@ -32,7 +32,7 @@ class FixMDI : public Fix {
   int setmask();
   void init();
 
-  char *engine_mode(int node);
+  char *engine_mode(const char *node);
 
   // receive and update forces
   void setup(int);
@@ -61,14 +61,14 @@ class FixMDI : public Fix {
                         // 2 - OPTG
   bool exit_flag;
   bool local_exit_flag;
-  int current_node;
-  int target_node;      // is the code supposed to advance to a particular node?
-                        // 0 - none
-                        // 1 - @COORDS (before pre-force calculation)
-                        // 2 - @PRE-FORCES (before final force calculation)
-                        // 3 - @FORCES (before time integration)
-                        // -1 - after MD_INIT command
-                        // -2 - after MD_INIT command followed by @PRE-FORCES
+  char *current_node;
+  char *target_node;      // is the code supposed to advance to a particular node?
+                          // 0 - none
+                          // 1 - @COORDS (before pre-force calculation)
+                          // 2 - @PRE-FORCES (before final force calculation)
+                          // 3 - @FORCES (before time integration)
+                          // -1 - after MD_INIT command
+                          // -2 - after MD_INIT command followed by @PRE-FORCES (actually @INIT_OPTG?)
 
   // command to be executed at the target node
   char *target_command;

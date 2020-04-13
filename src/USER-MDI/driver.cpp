@@ -53,6 +53,23 @@ CommandMDI::~CommandMDI() {
 void CommandMDI::command(int narg, char **arg)
 {
 
+  // register the default node
+  MDI_Register_Node("@DEFAULT");
+
+  // register the MD initialization node
+  MDI_Register_Node("@INIT_MD");
+
+  // register the pre-forces node
+  MDI_Register_Node("@PRE-FORCES");
+
+  // register the forces node
+  MDI_Register_Node("@FORCES");
+  MDI_Register_Callback("@FORCES", ">FORCES");
+
+  // register the coordinates node
+  MDI_Register_Node("@COORDS");
+
+
   // identify the driver fix
   for (int i = 0; i < modify->nfix; i++) {
     if (strcmp(modify->fix[i]->style,"mdi") == 0) {
@@ -74,7 +91,7 @@ void CommandMDI::command(int narg, char **arg)
   // begin engine_mode
   char *command = NULL;
   while ( true ) {
-    command = mdi_fix->engine_mode(0);
+    command = mdi_fix->engine_mode("@DEFAULT");
 
     if (strcmp(command,"@INIT_MD") == 0 ) {
       // enter MDI simulation control loop
@@ -117,9 +134,9 @@ int CommandMDI::mdi_md()
   update->endstep = update->laststep;
   lmp->init();
 
-  // the MD simulation is now at the @MD_INIT node
+  // the MD simulation is now at the @INIT_MD node
   char *command = NULL;
-  command = mdi_fix->engine_mode(-1);
+  command = mdi_fix->engine_mode("@INIT_MD");
 
   // only two commands are valid at this point
   // SHOULD PROBABLY HAVE:
@@ -152,7 +169,7 @@ int CommandMDI::mdi_md()
   //>>>>
 
   // the MD simulation is now at the @FORCES node
-  command = mdi_fix->engine_mode(3);
+  command = mdi_fix->engine_mode("@FORCES");
   //command = mdi_fix->engine_mode(2);
   command = mdi_fix->command;
 
@@ -235,7 +252,7 @@ int CommandMDI::mdi_optg()
   update->endstep = update->laststep = update->firststep + update->nsteps;
   lmp->init();
 
-  command = mdi_fix->engine_mode(-2);
+  command = mdi_fix->engine_mode("@INIT_OPTG");
 
   // only two commands are valid at this point
   // SHOULD PROBABLY HAVE:

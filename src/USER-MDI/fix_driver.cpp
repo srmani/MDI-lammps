@@ -76,9 +76,12 @@ FixMDI::FixMDI(LAMMPS *lmp, int narg, char **arg) :
   most_recent_init = 0;
   exit_flag = false;
   local_exit_flag = false;
-  target_node = 0;
   target_command = new char[MDI_COMMAND_LENGTH+1];
   command = new char[MDI_COMMAND_LENGTH+1];
+  current_node = new char[MDI_COMMAND_LENGTH];
+  target_node = new char[MDI_COMMAND_LENGTH];
+  strncpy(target_node, "\0", MDI_COMMAND_LENGTH);
+  strncpy(current_node, "@DEFAULT", MDI_COMMAND_LENGTH);
 
   int n = strlen(id) + 4;
   id_pe = new char[n];
@@ -176,7 +179,7 @@ void FixMDI::setup(int vflag)
 
   if ( most_recent_init == 1 ) { // md
     // @PRE-FORCES
-    engine_mode(2);
+    engine_mode("@PRE-FORCES");
   }
 }
 
@@ -190,14 +193,14 @@ void FixMDI::min_setup(int vflag)
   pe->addstep(update->ntimestep+1);
 
   // @FORCES
-  engine_mode(3);
+  engine_mode("@FORCES");
 }
 
 /* ---------------------------------------------------------------------- */
 
 void FixMDI::post_integrate()
 {
-  engine_mode(1);
+  engine_mode("@COORDS");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -208,7 +211,7 @@ void FixMDI::post_force(int vflag)
   potential_energy = pe->compute_scalar();
 
   // @PRE-FORCES
-  engine_mode(2);
+  engine_mode("@PRE-FORCES");
 
   // trigger potential energy computation on next timestep
   pe->addstep(update->ntimestep+1);
@@ -220,7 +223,7 @@ void FixMDI::post_force(int vflag)
 void FixMDI::min_pre_force(int vflag)
 {
   // @COORDS
-  engine_mode(1);
+  engine_mode("@COORDS");
 }
 
 /* ---------------------------------------------------------------------- */
@@ -231,7 +234,7 @@ void FixMDI::min_post_force(int vflag)
   potential_energy = pe->compute_scalar();
 
   // @FORCES
-  engine_mode(3);
+  engine_mode("@FORCES");
 
   // trigger potential energy computation on next timestep
   pe->addstep(update->ntimestep+1);
@@ -243,17 +246,17 @@ void FixMDI::end_of_step()
 {
   if ( most_recent_init == 1 ) { // md
     // @FORCES
-    engine_mode(3);
+    engine_mode("@FORCES");
   }
   else if ( most_recent_init == 2 ) { // optg
     // @FORCES
-    engine_mode(3);
+    engine_mode("@FORCES");
   }
 }
 
 /* ---------------------------------------------------------------------- */
 
-char *FixMDI::engine_mode(int node)
+char *FixMDI::engine_mode(const char *node)
 {
   if (screen)
     fprintf(screen,"MDI ENGINE MODE: %i\n",node);
@@ -261,8 +264,8 @@ char *FixMDI::engine_mode(int node)
     fprintf(logfile,"MDI ENGINE MODE: %i\n",node);
 
   // flag to indicate whether the engine should continue listening for commands at this node
-  current_node = node;
-  if ( target_node != 0 and target_node != current_node ) {
+  strncpy(current_node, node, MDI_COMMAND_LENGTH);
+  if ( strcmp(target_node,"\0") != 0 and strcmp(target_node, current_node) != 0 ) {
     local_exit_flag = true;
   }
 
@@ -381,37 +384,26 @@ char *FixMDI::engine_mode(int node)
       //optg_init(error);
     }
     else if (strcmp(command,"@") == 0 ) {
-      target_node = 0;
+      strncpy(target_node, "\0", MDI_COMMAND_LENGTH);
       local_exit_flag = true;
     }
     else if (strcmp(command,"<@") == 0 ) {
       if (master) {
-	if ( current_node == 1 ) {
-	  ierr = MDI_Send("@COORDS", MDI_NAME_LENGTH, MDI_CHAR, driver_socket);
-	}
-	else if ( current_node == 2 ) {
-	  ierr = MDI_Send("@PRE-FORCES", MDI_NAME_LENGTH, MDI_CHAR, driver_socket);
-	}
-	else if (current_node == 3 ) {
-	  ierr = MDI_Send("@FORCES", MDI_NAME_LENGTH, MDI_CHAR, driver_socket);
-	}
-	else if ( current_node == -1 or current_node == -2 ) {
-	  ierr = MDI_Send("@START", MDI_NAME_LENGTH, MDI_CHAR, driver_socket);
-	}
+	ierr = MDI_Send(current_node, MDI_NAME_LENGTH, MDI_CHAR, driver_socket);
 	if (ierr != 0)
 	  error->all(FLERR,"Unable to send node to driver");
       }
     }
     else if (strcmp(command,"@COORDS") == 0 ) {
-      target_node = 1;
+      strncpy(target_node, "@COORDS", MDI_COMMAND_LENGTH);
       local_exit_flag = true;
     }
     else if (strcmp(command,"@PRE-FORCES") == 0 ) {
-      target_node = 2;
+      strncpy(target_node, "@PRE-FORCES", MDI_COMMAND_LENGTH);
       local_exit_flag = true;
     }
     else if (strcmp(command,"@FORCES") == 0 ) {
-      target_node = 3;
+      strncpy(target_node, "@FORCES", MDI_COMMAND_LENGTH);
       local_exit_flag = true;
     }
     else if (strcmp(command,"EXIT_SIM") == 0 ) {
@@ -449,7 +441,7 @@ char *FixMDI::engine_mode(int node)
     }
 
     // check if the target node is something other than the current node
-    if ( target_node != 0 and target_node != current_node ) {
+    if ( strcmp(target_node,"\0") != 0 and strcmp(target_node, current_node) != 0 ) {
       local_exit_flag = true;
     }
 
@@ -650,7 +642,7 @@ void FixMDI::send_forces(Error* error)
   x_buf = new double[3*atom->natoms];
 
   // if not at a node, calculate the forces
-  if ( current_node == 0 ) {
+  if ( strcmp(current_node, "@DEFAULT") == 0 ) {
     // certain fixes, such as shake, move the coordinates
     // to ensure that the coordinates do not change, store a copy
     double **x = atom->x;
@@ -685,7 +677,7 @@ void FixMDI::send_forces(Error* error)
       error->all(FLERR,"Unable to send atom forces to driver");
   }
 
-  if ( current_node == 0 ) {
+  if ( strcmp(current_node, "@DEFAULT") == 0 ) {
     // restore the original set of coordinates
     double **x_new = atom->x;
     for (int i = 0; i < nlocal; i++) {
