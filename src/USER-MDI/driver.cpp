@@ -24,6 +24,7 @@
 #include "domain.h"
 #include "update.h"
 #include "force.h"
+#include "finish.h"
 #include "min.h"
 #include "minimize.h"
 #include "modify.h"
@@ -114,6 +115,10 @@ void CommandMDI::command(int narg, char **arg)
       error->all(FLERR,strcat("MDI received unsupported command: ",command));
     }
   }
+
+  // flush the final output
+  Finish finish(lmp);
+  finish.end(0);
 
   return;
 
