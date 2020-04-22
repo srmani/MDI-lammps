@@ -773,7 +773,7 @@ void FixMDI::send_cell(Error* error)
   double angstrom_to_bohr;
   MDI_Conversion_Factor("angstrom", "bohr", &angstrom_to_bohr);
 
-  double celldata[12];
+  double celldata[9];
 
   celldata[0] = domain->boxhi[0] - domain->boxlo[0];
   celldata[1] = 0.0;
@@ -784,18 +784,20 @@ void FixMDI::send_cell(Error* error)
   celldata[6] = domain->xz;
   celldata[7] = domain->yz;
   celldata[8] = domain->boxhi[2] - domain->boxlo[2];
+  /*
   celldata[9 ] = domain->boxlo[0];
   celldata[10] = domain->boxlo[1];
   celldata[11] = domain->boxlo[2];
+  */
 
   // convert the units to bohr
   double unit_conv = force->angstrom * angstrom_to_bohr;
-  for (int icell=0; icell < 12; icell++) {
+  for (int icell=0; icell < 9; icell++) {
     celldata[icell] *= unit_conv;
   }
 
   if (master) { 
-    ierr = MDI_Send((char*) celldata, 12, MDI_DOUBLE, driver_socket);
+    ierr = MDI_Send((char*) celldata, 9, MDI_DOUBLE, driver_socket);
     if (ierr != 0)
       error->all(FLERR,"Unable to send cell dimensions to driver");
   }
