@@ -607,7 +607,7 @@ void FixMDI::send_masses(Error* error)
   if (master) { 
     double *mass_by_atom = new double[atom->natoms];
     for (int iatom=0; iatom < atom->natoms; iatom++) {
-      mass_by_atom[iatom] = mass[ type[iatom] ];
+      mass_by_atom[ atom->tag[iatom] - 1 ] = mass[ type[iatom] ];
     }
     ierr = MDI_Send((char*) mass_by_atom, atom->natoms, MDI_DOUBLE, driver_socket);
     if (ierr != 0)
