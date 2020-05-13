@@ -258,10 +258,12 @@ void FixMDI::end_of_step()
 
 char *FixMDI::engine_mode(const char *node)
 {
+  /*
   if (screen)
     fprintf(screen,"MDI ENGINE MODE: %i\n",node);
   if (logfile)
     fprintf(logfile,"MDI ENGINE MODE: %i\n",node);
+  */
 
   // flag to indicate whether the engine should continue listening for commands at this node
   strncpy(current_node, node, MDI_COMMAND_LENGTH);
@@ -285,10 +287,12 @@ char *FixMDI::engine_mode(const char *node)
     // broadcast the command to the other tasks
     MPI_Bcast(command,MDI_COMMAND_LENGTH,MPI_CHAR,0,world);
 
+    /*
     if (screen)
       fprintf(screen,"MDI command: %s\n",command);
     if (logfile)
       fprintf(logfile,"MDI command: %s:\n",command);
+    */
 
     if (strcmp(command,"STATUS      ") == 0 ) {
       // send the calculation status to the driver
