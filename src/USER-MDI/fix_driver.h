@@ -39,7 +39,7 @@ class FixMDI : public Fix {
   void min_setup(int);
   void post_integrate();
   void post_force(int);
-  void end_of_step();
+  void pre_reverse(int, int);
   void min_pre_force(int); //@COORDS
   void min_post_force(int); //@FORCES
 

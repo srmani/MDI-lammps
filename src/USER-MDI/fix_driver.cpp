@@ -124,8 +124,8 @@ int FixMDI::setmask()
 
   // MD masks
   mask |= POST_INTEGRATE;
+  mask |= PRE_REVERSE;
   mask |= POST_FORCE;
-  mask |= END_OF_STEP;
 
   // Minimizer masks
   mask |= MIN_PRE_FORCE;
@@ -205,7 +205,7 @@ void FixMDI::post_integrate()
 
 /* ---------------------------------------------------------------------- */
 
-void FixMDI::post_force(int vflag)
+void FixMDI::pre_reverse(int eflag, int vflag)
 {
   // calculate the energy
   potential_energy = pe->compute_scalar();
@@ -242,7 +242,7 @@ void FixMDI::min_post_force(int vflag)
 
 /* ---------------------------------------------------------------------- */
 
-void FixMDI::end_of_step()
+void FixMDI::post_force(int vflag)
 {
   if ( most_recent_init == 1 ) { // md
     // @FORCES
