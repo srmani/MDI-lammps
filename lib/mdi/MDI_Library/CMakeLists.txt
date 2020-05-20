@@ -70,7 +70,7 @@ if( mpi STREQUAL "ON" )
    #include MPI
    target_include_directories(mdi PRIVATE ${MPI_C_INCLUDE_PATH})
    target_compile_options(mdi PRIVATE ${MPI_C_COMPILE_FLAGS})
-   target_link_libraries(mdi ${MPI_C_LIBRARIES} ${MPI_C_LINK_FLAGS})
+   target_link_libraries(mdi PRIVATE ${MPI_C_LIBRARIES} ${MPI_C_LINK_FLAGS})
 
 elseif( mpi STREQUAL "OFF" )
 
