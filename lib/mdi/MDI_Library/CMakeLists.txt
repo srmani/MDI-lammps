@@ -4,7 +4,9 @@ include(CMakePackageConfigHelpers)
 
 
 #check for MPI
-find_package(MPI)
+if ( NOT ( mpi STREQUAL "OFF") )
+   find_package(MPI)
+endif()
 if( NOT MPI_FOUND )
    if( mpi STREQUAL "ON" )
       message( WARNING "Could not find MPI.  Compiling without MPI support." )
@@ -132,8 +134,8 @@ if( python_package STREQUAL "ON" )
 
 else()
 
-    set(MDI_INSTALL_INCLUDEDIR ${CMAKE_INSTALL_INCLUDEDIR}/MDI_Library)
-    set(MDI_INSTALL_LIBDIR     ${CMAKE_INSTALL_LIBDIR}/MDI_Library)
+    set(MDI_INSTALL_INCLUDEDIR ${CMAKE_INSTALL_INCLUDEDIR}/mdi)
+    set(MDI_INSTALL_LIBDIR     ${CMAKE_INSTALL_LIBDIR}/mdi)
 
 endif()
 
