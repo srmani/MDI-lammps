@@ -60,6 +60,9 @@ void CommandMDI::command(int narg, char **arg)
   // register the MD initialization node
   MDI_Register_Node("@INIT_MD");
 
+  // register the OPTG initialization node
+  MDI_Register_Node("@INIT_OPTG");
+
   // register the pre-forces node
   MDI_Register_Node("@PRE-FORCES");
 
