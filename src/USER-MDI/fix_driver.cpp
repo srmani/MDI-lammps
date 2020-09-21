@@ -53,7 +53,8 @@ using namespace FixConst;
  ***************************************************************/
 FixMDI::FixMDI(LAMMPS *lmp, int narg, char **arg) :
   Fix(lmp, narg, arg),
-  id_pe(NULL), pe(NULL)
+  id_pe(NULL), pe(NULL),
+  id_ke(NULL), ke(NULL)
 {
 
   if (narg > 3)
@@ -83,17 +84,29 @@ FixMDI::FixMDI(LAMMPS *lmp, int narg, char **arg) :
   strncpy(target_node, "\0", MDI_COMMAND_LENGTH);
   strncpy(current_node, "@DEFAULT", MDI_COMMAND_LENGTH);
 
-  int n = strlen(id) + 4;
-  id_pe = new char[n];
+  // create and add a compute for PE calculation
+  int n_pe = strlen(id) + 4;
+  id_pe = new char[n_pe];
   strcpy(id_pe,id);
   strcat(id_pe,"_pe");
+  char **newarg_pe = new char*[3];
+  newarg_pe[0] = id_pe;
+  newarg_pe[1] = (char *) "all";
+  newarg_pe[2] = (char *) "pe";
+  modify->add_compute(3,newarg_pe);
+  delete [] newarg_pe;
 
-  char **newarg = new char*[3];
-  newarg[0] = id_pe;
-  newarg[1] = (char *) "all";
-  newarg[2] = (char *) "pe";
-  modify->add_compute(3,newarg);
-  delete [] newarg;
+  // create and add a compute for KE calculation
+  int n_ke = strlen(id) + 4;
+  id_ke = new char[n_ke];
+  strcpy(id_ke,id);
+  strcat(id_ke,"_ke");
+  char **newarg_ke = new char*[3];
+  newarg_ke[0] = id_ke;
+  newarg_ke[1] = (char *) "all";
+  newarg_ke[2] = (char *) "ke";
+  modify->add_compute(3,newarg_ke);
+  delete [] newarg_ke;
 
   // accept a communicator to the driver
   int ierr;
@@ -111,8 +124,10 @@ FixMDI::FixMDI(LAMMPS *lmp, int narg, char **arg) :
 FixMDI::~FixMDI()
 {
   modify->delete_compute(id_pe);
+  modify->delete_compute(id_ke);
   delete irregular;
   delete [] id_pe;
+  delete [] id_ke;
   delete [] target_command;
   delete [] command;
 }
@@ -157,11 +172,17 @@ void FixMDI::exchange_forces()
 
 void FixMDI::init()
 {
-
-  int icompute = modify->find_compute(id_pe);
+  // Confirm that the required computes are available
+  int icompute;
+  icompute = modify->find_compute(id_pe);
   if (icompute < 0)
     error->all(FLERR,"Potential energy ID for fix mdi does not exist");
+  icompute = modify->find_compute(id_ke);
+  if (icompute < 0)
+    error->all(FLERR,"Kinetic energy ID for fix mdi does not exist");
+
   pe = modify->compute[icompute];
+  ke = modify->compute[icompute];
 
   return;
 
@@ -173,9 +194,11 @@ void FixMDI::setup(int vflag)
 {
   //compute the potential energy
   potential_energy = pe->compute_scalar();
+  kinetic_energy = ke->compute_scalar();
 
   // trigger potential energy computation on next timestep
   pe->addstep(update->ntimestep+1);
+  ke->addstep(update->ntimestep+1);
 
   if ( most_recent_init == 1 ) { // md
     // @PRE-FORCES
@@ -188,9 +211,11 @@ void FixMDI::setup(int vflag)
 void FixMDI::min_setup(int vflag)
 {
   potential_energy = pe->compute_scalar();
+  kinetic_energy = ke->compute_scalar();
 
   // trigger potential energy computation on next timestep
   pe->addstep(update->ntimestep+1);
+  ke->addstep(update->ntimestep+1);
 
   // @FORCES
   engine_mode("@FORCES");
@@ -209,12 +234,14 @@ void FixMDI::pre_reverse(int eflag, int vflag)
 {
   // calculate the energy
   potential_energy = pe->compute_scalar();
+  kinetic_energy = ke->compute_scalar();
 
   // @PRE-FORCES
   engine_mode("@PRE-FORCES");
 
   // trigger potential energy computation on next timestep
   pe->addstep(update->ntimestep+1);
+  ke->addstep(update->ntimestep+1);
 }
 
 
@@ -232,12 +259,14 @@ void FixMDI::min_post_force(int vflag)
 {
   // calculate the energy
   potential_energy = pe->compute_scalar();
+  kinetic_energy = ke->compute_scalar();
 
   // @FORCES
   engine_mode("@FORCES");
 
   // trigger potential energy computation on next timestep
   pe->addstep(update->ntimestep+1);
+  ke->addstep(update->ntimestep+1);
 }
 
 /* ---------------------------------------------------------------------- */
@@ -352,7 +381,7 @@ char *FixMDI::engine_mode(const char *node)
       send_charges(error);
     }
     else if (strcmp(command,"<ENERGY") == 0 ) {
-      // send the potential energy to the driver
+      // send the total energy to the driver
       send_energy(error);
     }
     else if (strcmp(command,"<FORCES") == 0 ) {
@@ -397,6 +426,14 @@ char *FixMDI::engine_mode(const char *node)
 	if (ierr != 0)
 	  error->all(FLERR,"Unable to send node to driver");
       }
+    }
+    else if (strcmp(command,"<KE") == 0 ) {
+      // send the kinetic energy to the driver
+      send_ke(error);
+    }
+    else if (strcmp(command,"<PE") == 0 ) {
+      // send the potential energy to the driver
+      send_pe(error);
     }
     else if (strcmp(command,"@COORDS") == 0 ) {
       strncpy(target_node, "@COORDS", MDI_COMMAND_LENGTH);
@@ -575,16 +612,56 @@ void FixMDI::send_energy(Error* error)
   double kelvin_to_hartree;
   MDI_Conversion_Factor("kelvin_energy", "hartree", &kelvin_to_hartree);
 
-  double pe;
-  double *send_pe = &pe;
+  double pe = potential_energy;
+  double ke = kinetic_energy;
+  double total_energy;
+  double *send_energy = &total_energy;
 
-  pe = potential_energy;
+  // convert the energy to atomic units
+  pe *= kelvin_to_hartree/force->boltz;
+  ke *= kelvin_to_hartree/force->boltz;
+  total_energy = pe + ke;
+
+  if (master) {
+    ierr = MDI_Send((char*) send_energy, 1, MDI_DOUBLE, driver_socket);
+    if (ierr != 0)
+      error->all(FLERR,"Unable to send potential energy to driver");
+  }
+}
+
+
+void FixMDI::send_pe(Error* error)
+{
+  double kelvin_to_hartree;
+  MDI_Conversion_Factor("kelvin_energy", "hartree", &kelvin_to_hartree);
+
+  double pe = potential_energy;
+  double *send_energy = &pe;
 
   // convert the energy to atomic units
   pe *= kelvin_to_hartree/force->boltz;
 
   if (master) {
-    ierr = MDI_Send((char*) send_pe, 1, MDI_DOUBLE, driver_socket);
+    ierr = MDI_Send((char*) send_energy, 1, MDI_DOUBLE, driver_socket);
+    if (ierr != 0)
+      error->all(FLERR,"Unable to send potential energy to driver");
+  }
+}
+
+
+void FixMDI::send_ke(Error* error)
+{
+  double kelvin_to_hartree;
+  MDI_Conversion_Factor("kelvin_energy", "hartree", &kelvin_to_hartree);
+
+  double ke = kinetic_energy;
+  double *send_energy = &ke;
+
+  // convert the energy to atomic units
+  ke *= kelvin_to_hartree/force->boltz;
+
+  if (master) {
+    ierr = MDI_Send((char*) send_energy, 1, MDI_DOUBLE, driver_socket);
     if (ierr != 0)
       error->all(FLERR,"Unable to send potential energy to driver");
   }
