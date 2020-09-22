@@ -173,16 +173,15 @@ void FixMDI::exchange_forces()
 void FixMDI::init()
 {
   // Confirm that the required computes are available
-  int icompute;
-  icompute = modify->find_compute(id_pe);
-  if (icompute < 0)
+  int icompute_pe = modify->find_compute(id_pe);
+  if (icompute_pe < 0)
     error->all(FLERR,"Potential energy ID for fix mdi does not exist");
-  icompute = modify->find_compute(id_ke);
-  if (icompute < 0)
+  int icompute_ke = modify->find_compute(id_ke);
+  if (icompute_pe < 0)
     error->all(FLERR,"Kinetic energy ID for fix mdi does not exist");
 
-  pe = modify->compute[icompute];
-  ke = modify->compute[icompute];
+  pe = modify->compute[icompute_pe];
+  ke = modify->compute[icompute_ke];
 
   return;
 
