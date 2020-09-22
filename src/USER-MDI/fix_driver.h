@@ -45,6 +45,7 @@ class FixMDI : public Fix {
 
   double *add_force; // stores forces added using +FORCE command
   double potential_energy; // stores potential energy
+  double kinetic_energy; // stores kinetic energy
 
   // current command
   char *command;
@@ -74,9 +75,11 @@ class FixMDI : public Fix {
   char *target_command;
 
   char *id_pe;
+  char *id_ke;
   class Irregular *irregular;
   class Minimize *minimizer;
   class Compute *pe;
+  class Compute *ke;
   void send_types(Error *);
   void send_masses(Error *);
   void receive_coordinates(Error *);
@@ -84,6 +87,8 @@ class FixMDI : public Fix {
   void send_charges(Error *);
   void send_energy(Error *);
   void send_forces(Error *);
+  void send_pe(Error *);
+  void send_ke(Error *);
   void add_forces(Error *);
   void receive_forces(Error *);
   void send_cell(Error *);
