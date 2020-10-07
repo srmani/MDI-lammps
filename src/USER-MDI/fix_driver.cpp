@@ -322,6 +322,14 @@ char *FixMDI::engine_mode(const char *node)
       fprintf(logfile,"MDI command: %s:\n",command);
     */
 
+    // confirm that this command is supported at this node
+    int command_exists = 0;
+    ierr = MDI_Check_Command_Exists(current_node, command, MDI_COMM_NULL, &command_exists);
+    if (ierr != 0)
+        error->all(FLERR,"Unable to check whether the current command is supported");
+    if ( command_exists != 1 )
+        error->all(FLERR,"Received a command that is not supported at the current node");
+
     if (strcmp(command,"STATUS      ") == 0 ) {
       // send the calculation status to the driver
       if (master) {

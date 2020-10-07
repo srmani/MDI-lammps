@@ -56,22 +56,110 @@ void CommandMDI::command(int narg, char **arg)
 
   // register the default node
   MDI_Register_Node("@DEFAULT");
+  MDI_Register_Command("@DEFAULT", "<@");
+  MDI_Register_Command("@DEFAULT", "<CELL");
+  MDI_Register_Command("@DEFAULT", "<CHARGES");
+  MDI_Register_Command("@DEFAULT", "<COORDS");
+  MDI_Register_Command("@DEFAULT", "<NATOMS");
+  MDI_Register_Command("@DEFAULT", "<MASSES");
+  MDI_Register_Command("@DEFAULT", ">COORDS");
+  MDI_Register_Command("@DEFAULT", "@INIT_MD");
+  MDI_Register_Command("@DEFAULT", "@INIT_OPTG");
 
   // register the MD initialization node
   MDI_Register_Node("@INIT_MD");
+  MDI_Register_Command("@INIT_MD", "<@");
+  MDI_Register_Command("@INIT_MD", "<CELL");
+  MDI_Register_Command("@INIT_MD", "<CHARGES");
+  MDI_Register_Command("@INIT_MD", "<COORDS");
+  MDI_Register_Command("@INIT_MD", "<ENERGY");
+  MDI_Register_Command("@INIT_MD", "<FORCES");
+  MDI_Register_Command("@INIT_MD", "<KE");
+  MDI_Register_Command("@INIT_MD", "<MASSES");
+  MDI_Register_Command("@INIT_MD", "<NATOMS");
+  MDI_Register_Command("@INIT_MD", "<PE");
+  MDI_Register_Command("@INIT_MD", ">COORDS");
+  MDI_Register_Command("@INIT_MD", ">FORCES");
+  MDI_Register_Command("@INIT_MD", "@");
+  MDI_Register_Command("@INIT_MD", "@COORDS");
+  MDI_Register_Command("@INIT_MD", "@FORCES");
+  MDI_Register_Command("@INIT_MD", "@PRE-FORCES");
 
   // register the OPTG initialization node
   MDI_Register_Node("@INIT_OPTG");
+  MDI_Register_Command("@INIT_OPTG", "<@");
+  MDI_Register_Command("@INIT_OPTG", "<CELL");
+  MDI_Register_Command("@INIT_OPTG", "<CHARGES");
+  MDI_Register_Command("@INIT_OPTG", "<COORDS");
+  MDI_Register_Command("@INIT_OPTG", "<ENERGY");
+  MDI_Register_Command("@INIT_OPTG", "<FORCES");
+  MDI_Register_Command("@INIT_OPTG", "<KE");
+  MDI_Register_Command("@INIT_OPTG", "<MASSES");
+  MDI_Register_Command("@INIT_OPTG", "<NATOMS");
+  MDI_Register_Command("@INIT_OPTG", "<PE");
+  MDI_Register_Command("@INIT_OPTG", ">COORDS");
+  MDI_Register_Command("@INIT_OPTG", ">FORCES");
+  MDI_Register_Command("@INIT_OPTG", "@");
+  MDI_Register_Command("@INIT_OPTG", "@COORDS");
+  MDI_Register_Command("@INIT_OPTG", "@FORCES");
 
   // register the pre-forces node
   MDI_Register_Node("@PRE-FORCES");
+  MDI_Register_Command("@PRE-FORCES", "<@");
+  MDI_Register_Command("@PRE-FORCES", "<CELL");
+  MDI_Register_Command("@PRE-FORCES", "<CHARGES");
+  MDI_Register_Command("@PRE-FORCES", "<COORDS");
+  MDI_Register_Command("@PRE-FORCES", "<ENERGY");
+  MDI_Register_Command("@PRE-FORCES", "<FORCES");
+  MDI_Register_Command("@PRE-FORCES", "<KE");
+  MDI_Register_Command("@PRE-FORCES", "<MASSES");
+  MDI_Register_Command("@PRE-FORCES", "<NATOMS");
+  MDI_Register_Command("@PRE-FORCES", "<PE");
+  MDI_Register_Command("@PRE-FORCES", ">COORDS");
+  MDI_Register_Command("@PRE-FORCES", ">FORCES");
+  MDI_Register_Command("@PRE-FORCES", "@");
+  MDI_Register_Command("@PRE-FORCES", "@COORDS");
+  MDI_Register_Command("@PRE-FORCES", "@FORCES");
+  MDI_Register_Command("@PRE-FORCES", "@PRE-FORCES");
 
   // register the forces node
   MDI_Register_Node("@FORCES");
   MDI_Register_Callback("@FORCES", ">FORCES");
+  MDI_Register_Command("@FORCES", "<@");
+  MDI_Register_Command("@FORCES", "<CELL");
+  MDI_Register_Command("@FORCES", "<CHARGES");
+  MDI_Register_Command("@FORCES", "<COORDS");
+  MDI_Register_Command("@FORCES", "<ENERGY");
+  MDI_Register_Command("@FORCES", "<FORCES");
+  MDI_Register_Command("@FORCES", "<KE");
+  MDI_Register_Command("@FORCES", "<MASSES");
+  MDI_Register_Command("@FORCES", "<NATOMS");
+  MDI_Register_Command("@FORCES", "<PE");
+  MDI_Register_Command("@FORCES", ">COORDS");
+  MDI_Register_Command("@FORCES", ">FORCES");
+  MDI_Register_Command("@FORCES", "@");
+  MDI_Register_Command("@FORCES", "@COORDS");
+  MDI_Register_Command("@FORCES", "@FORCES");
+  MDI_Register_Command("@FORCES", "@PRE-FORCES");
 
   // register the coordinates node
   MDI_Register_Node("@COORDS");
+  MDI_Register_Command("@COORDS", "<@");
+  MDI_Register_Command("@COORDS", "<CELL");
+  MDI_Register_Command("@COORDS", "<CHARGES");
+  MDI_Register_Command("@COORDS", "<COORDS");
+  MDI_Register_Command("@COORDS", "<ENERGY");
+  MDI_Register_Command("@COORDS", "<FORCES");
+  MDI_Register_Command("@COORDS", "<KE");
+  MDI_Register_Command("@COORDS", "<MASSES");
+  MDI_Register_Command("@COORDS", "<NATOMS");
+  MDI_Register_Command("@COORDS", "<PE");
+  MDI_Register_Command("@COORDS", ">COORDS");
+  MDI_Register_Command("@COORDS", ">FORCES");
+  MDI_Register_Command("@COORDS", "@");
+  MDI_Register_Command("@COORDS", "@COORDS");
+  MDI_Register_Command("@COORDS", "@FORCES");
+  MDI_Register_Command("@COORDS", "@PRE-FORCES");
 
 
   // identify the driver fix
