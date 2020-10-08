@@ -65,6 +65,7 @@ void CommandMDI::command(int narg, char **arg)
   MDI_Register_Command("@DEFAULT", ">COORDS");
   MDI_Register_Command("@DEFAULT", "@INIT_MD");
   MDI_Register_Command("@DEFAULT", "@INIT_OPTG");
+  MDI_Register_Command("@DEFAULT", "EXIT");
 
   // register the MD initialization node
   MDI_Register_Node("@INIT_MD");
@@ -84,6 +85,7 @@ void CommandMDI::command(int narg, char **arg)
   MDI_Register_Command("@INIT_MD", "@COORDS");
   MDI_Register_Command("@INIT_MD", "@FORCES");
   MDI_Register_Command("@INIT_MD", "@PRE-FORCES");
+  MDI_Register_Command("@INIT_MD", "EXIT");
 
   // register the OPTG initialization node
   MDI_Register_Node("@INIT_OPTG");
@@ -102,6 +104,7 @@ void CommandMDI::command(int narg, char **arg)
   MDI_Register_Command("@INIT_OPTG", "@");
   MDI_Register_Command("@INIT_OPTG", "@COORDS");
   MDI_Register_Command("@INIT_OPTG", "@FORCES");
+  MDI_Register_Command("@INIT_OPTG", "EXIT");
 
   // register the pre-forces node
   MDI_Register_Node("@PRE-FORCES");
@@ -121,6 +124,7 @@ void CommandMDI::command(int narg, char **arg)
   MDI_Register_Command("@PRE-FORCES", "@COORDS");
   MDI_Register_Command("@PRE-FORCES", "@FORCES");
   MDI_Register_Command("@PRE-FORCES", "@PRE-FORCES");
+  MDI_Register_Command("@PRE-FORCES", "EXIT");
 
   // register the forces node
   MDI_Register_Node("@FORCES");
@@ -141,6 +145,7 @@ void CommandMDI::command(int narg, char **arg)
   MDI_Register_Command("@FORCES", "@COORDS");
   MDI_Register_Command("@FORCES", "@FORCES");
   MDI_Register_Command("@FORCES", "@PRE-FORCES");
+  MDI_Register_Command("@FORCES", "EXIT");
 
   // register the coordinates node
   MDI_Register_Node("@COORDS");
@@ -160,6 +165,7 @@ void CommandMDI::command(int narg, char **arg)
   MDI_Register_Command("@COORDS", "@COORDS");
   MDI_Register_Command("@COORDS", "@FORCES");
   MDI_Register_Command("@COORDS", "@PRE-FORCES");
+  MDI_Register_Command("@COORDS", "EXIT");
 
 
   // identify the driver fix
