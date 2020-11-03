@@ -562,6 +562,11 @@ void FixMDI::send_coordinates(Error* error)
   coords = new double[3*atom->natoms];
   coords_reduced = new double[3*atom->natoms];
 
+  // zero the coordinates array
+  for (int icoord = 0; icoord < 3*atom->natoms; icoord++) {
+    coords[icoord] = 0.0;
+  }
+
   // pick local atoms from the buffer
   double **x = atom->x;
   int *mask = atom->mask;
@@ -592,6 +597,11 @@ void FixMDI::send_charges(Error* error)
 
   charges = new double[atom->natoms];
   charges_reduced = new double[atom->natoms];
+
+  // zero the charges array
+  for (int icharge = 0; icharge < atom->natoms; icharge++) {
+    charges[icharge] = 0.0;
+  }
 
   // pick local atoms from the buffer
   double *charge = atom->q;
@@ -727,7 +737,12 @@ void FixMDI::send_forces(Error* error)
 
   forces = new double[3*atom->natoms];
   forces_reduced = new double[3*atom->natoms];
-  x_buf = new double[3*atom->natoms];
+  x_buf = new double[3*nlocal];
+
+  // zero the forces array
+  for (int iforce = 0; iforce < 3*atom->natoms; iforce++) {
+    forces[iforce] = 0.0;
+  }
 
   // if not at a node, calculate the forces
   if ( strcmp(current_node, "@DEFAULT") == 0 ) {
