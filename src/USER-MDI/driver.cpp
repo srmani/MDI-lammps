@@ -60,6 +60,7 @@ void CommandMDI::command(int narg, char **arg)
   MDI_Register_Command("@DEFAULT", "<CELL");
   MDI_Register_Command("@DEFAULT", "<CHARGES");
   MDI_Register_Command("@DEFAULT", "<COORDS");
+  MDI_Register_Command("@DEFAULT", "<LABELS");
   MDI_Register_Command("@DEFAULT", "<NATOMS");
   MDI_Register_Command("@DEFAULT", "<MASSES");
   MDI_Register_Command("@DEFAULT", ">COORDS");
@@ -76,6 +77,7 @@ void CommandMDI::command(int narg, char **arg)
   MDI_Register_Command("@INIT_MD", "<ENERGY");
   MDI_Register_Command("@INIT_MD", "<FORCES");
   MDI_Register_Command("@INIT_MD", "<KE");
+  MDI_Register_Command("@INIT_MD", "<LABELS");
   MDI_Register_Command("@INIT_MD", "<MASSES");
   MDI_Register_Command("@INIT_MD", "<NATOMS");
   MDI_Register_Command("@INIT_MD", "<PE");
@@ -96,6 +98,7 @@ void CommandMDI::command(int narg, char **arg)
   MDI_Register_Command("@INIT_OPTG", "<ENERGY");
   MDI_Register_Command("@INIT_OPTG", "<FORCES");
   MDI_Register_Command("@INIT_OPTG", "<KE");
+  MDI_Register_Command("@INIT_OPTG", "<LABELS");
   MDI_Register_Command("@INIT_OPTG", "<MASSES");
   MDI_Register_Command("@INIT_OPTG", "<NATOMS");
   MDI_Register_Command("@INIT_OPTG", "<PE");
@@ -115,6 +118,7 @@ void CommandMDI::command(int narg, char **arg)
   MDI_Register_Command("@PRE-FORCES", "<ENERGY");
   MDI_Register_Command("@PRE-FORCES", "<FORCES");
   MDI_Register_Command("@PRE-FORCES", "<KE");
+  MDI_Register_Command("@PRE-FORCES", "<LABELS");
   MDI_Register_Command("@PRE-FORCES", "<MASSES");
   MDI_Register_Command("@PRE-FORCES", "<NATOMS");
   MDI_Register_Command("@PRE-FORCES", "<PE");
@@ -136,6 +140,7 @@ void CommandMDI::command(int narg, char **arg)
   MDI_Register_Command("@FORCES", "<ENERGY");
   MDI_Register_Command("@FORCES", "<FORCES");
   MDI_Register_Command("@FORCES", "<KE");
+  MDI_Register_Command("@FORCES", "<LABELS");
   MDI_Register_Command("@FORCES", "<MASSES");
   MDI_Register_Command("@FORCES", "<NATOMS");
   MDI_Register_Command("@FORCES", "<PE");
@@ -156,6 +161,7 @@ void CommandMDI::command(int narg, char **arg)
   MDI_Register_Command("@COORDS", "<ENERGY");
   MDI_Register_Command("@COORDS", "<FORCES");
   MDI_Register_Command("@COORDS", "<KE");
+  MDI_Register_Command("@COORDS", "<LABELS");
   MDI_Register_Command("@COORDS", "<MASSES");
   MDI_Register_Command("@COORDS", "<NATOMS");
   MDI_Register_Command("@COORDS", "<PE");

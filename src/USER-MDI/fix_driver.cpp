@@ -367,6 +367,10 @@ char *FixMDI::engine_mode(const char *node)
       // send the atom types
       send_types(error);
     }
+    else if (strcmp(command,"<LABELS") == 0 ) {
+      // send the atom labels
+      send_labels(error);
+    }
     else if (strcmp(command,"<MASSES") == 0 ) {
       // send the atom types
       send_masses(error);
@@ -694,6 +698,27 @@ void FixMDI::send_types(Error* error)
     if (ierr != 0)
       error->all(FLERR,"Unable to send atom types to driver");
   }
+}
+
+
+void FixMDI::send_labels(Error* error)
+{
+  char *labels = new char[atom->natoms * MDI_LABEL_LENGTH];
+  memset(labels, ' ', atom->natoms * MDI_LABEL_LENGTH);
+
+  for (int iatom=0; iatom < atom->natoms; iatom++) {
+    std::string label = std::to_string( atom->type[iatom] );
+    int label_len = std::min( int(label.length()), MDI_LABEL_LENGTH );
+    strncpy(&labels[iatom * MDI_LABEL_LENGTH], label.c_str(), label_len);
+  }
+
+  if (master) { 
+    ierr = MDI_Send( labels, atom->natoms * MDI_LABEL_LENGTH, MDI_CHAR, driver_socket);
+    if (ierr != 0)
+      error->all(FLERR,"Unable to send atom types to driver");
+  }
+
+  delete [] labels;
 }
 
 

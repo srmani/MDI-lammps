@@ -81,6 +81,7 @@ class FixMDI : public Fix {
   class Compute *pe;
   class Compute *ke;
   void send_types(Error *);
+  void send_labels(Error *);
   void send_masses(Error *);
   void receive_coordinates(Error *);
   void send_coordinates(Error *);
