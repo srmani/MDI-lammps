@@ -21,14 +21,10 @@ except ImportError:
     use_mpi4py = False
 
 # get the path to the MDI Library
-try: # Unix
-    mdi_name_file = open(dir_path + "/mdi_name","r")
-    mdi_name = mdi_name_file.read()
-    mdi_path = dir_path + "/" + mdi_name
-except IOError: # Windows
-    mdi_name_file = open(dir_path + "\\mdi_name","r")
-    mdi_name = mdi_name_file.read()
-    mdi_path = dir_path + "\\" + mdi_name
+mdi_name_path = os.path.join( dir_path, "mdi_name" )
+mdi_name_file = open( mdi_name_path, "r" )
+mdi_name = mdi_name_file.read()
+mdi_path = os.path.join( dir_path, mdi_name )
 
 # load the MDI Library
 try:
@@ -41,6 +37,7 @@ except (ValueError, AttributeError):
 # MDI Variables
 MDI_COMMAND_LENGTH = ctypes.c_int.in_dll(mdi, "MDI_COMMAND_LENGTH").value
 MDI_NAME_LENGTH = ctypes.c_int.in_dll(mdi, "MDI_NAME_LENGTH").value
+MDI_LABEL_LENGTH = ctypes.c_int.in_dll(mdi, "MDI_LABEL_LENGTH").value
 MDI_COMM_NULL = ctypes.c_int.in_dll(mdi, "MDI_COMM_NULL").value
 MDI_INT = ctypes.c_int.in_dll(mdi, "MDI_INT").value
 MDI_DOUBLE = ctypes.c_int.in_dll(mdi, "MDI_DOUBLE").value
